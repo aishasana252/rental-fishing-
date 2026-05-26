@@ -39,3 +39,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# database/migration scripts
+/add-broken-images-column.js
+/check-db.js
+/fix-db.js
+/migrate.js
+/migrate_direct.js
+/migrate_direct_2.js
+/migrate_lures.js
+
+# scratch/temp directories
+/scratch/
+/public/uploads/
