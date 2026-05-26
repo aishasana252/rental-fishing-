@@ -4,8 +4,9 @@ import { useRouter } from 'next/navigation';
 import {
   ShieldAlert, ShoppingBag, Compass, Anchor, MapPin, DollarSign,
   AlertTriangle, CheckCircle, Clock, ShieldCheck, Mail, Edit3, Plus, Trash2, Calendar,
-  Fish, Waves, User, Lock, Save, Eye, EyeOff, XCircle, LogOut
+  Fish, Waves, User, Lock, Save, Eye, EyeOff, XCircle, LogOut, Menu, X
 } from 'lucide-react';
+
 
 // Automatic client-side image compression utility
 const compressImage = (file, maxWidth = 1000, quality = 0.75, returnBase64 = false) => {
@@ -67,6 +68,7 @@ const compressImage = (file, maxWidth = 1000, quality = 0.75, returnBase64 = fal
 export default function AdminDashboard({ session, initialData }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     const savedTab = localStorage.getItem('adminActiveTab');
@@ -888,10 +890,43 @@ export default function AdminDashboard({ session, initialData }) {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row w-full min-h-screen items-stretch">
+    <div className="flex flex-col lg:flex-row w-full min-h-screen items-stretch relative overflow-x-hidden">
       
-      {/* Sidebar Navigation - Full Height & Attached to Left Edge */}
-      <div className="w-full lg:w-80 flex flex-col bg-[#001418] border-r border-[#00B5AD]/15 p-6 flex-shrink-0 min-h-screen">
+      {/* Mobile Top Navigation Header Bar */}
+      <div className="lg:hidden w-full flex items-center justify-between bg-[#001418] border-b border-[#00B5AD]/15 px-4 py-3 sticky top-0 z-30 shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full overflow-hidden border border-[#00B5AD] shadow-[0_0_10px_rgba(0,181,173,0.2)]">
+            <img
+              src="/assets/logo 1.jpeg"
+              alt="Reel Problems Logo"
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div>
+            <span className="text-[8px] font-black text-[#00B5AD] uppercase tracking-widest block leading-none mb-0.5">Control Center</span>
+            <span className="text-[#FFFFFF] text-sm font-black font-['Outfit'] leading-none">REEL PROBLEMS</span>
+          </div>
+        </div>
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="p-2 rounded-lg border border-[#00B5AD]/30 bg-[#04282F]/50 text-[#00B5AD] hover:bg-[#00B5AD]/10 transition-colors cursor-pointer"
+        >
+          {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+      </div>
+
+      {/* Sidebar Mobile Backdrop Overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-[#000000]/60 z-40 lg:hidden backdrop-blur-sm transition-opacity duration-300"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar Navigation Drawer - Responsive & Attached to Left */}
+      <div className={`fixed lg:static inset-y-0 left-0 w-80 flex flex-col bg-[#001418] border-r border-[#00B5AD]/15 p-6 flex-shrink-0 min-h-screen z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
 
         {/* Sidebar Header — Logo + Brand */}
         <div className="pb-5 mb-4 border-b border-[#00B5AD]/10 flex flex-col items-center gap-3">
@@ -908,7 +943,8 @@ export default function AdminDashboard({ session, initialData }) {
           </div>
         </div>
 
-        <div className="space-y-2">
+        {/* Scrollable container for menu items to prevent cutoff on small height screens */}
+        <div className="space-y-2 overflow-y-auto max-h-[calc(100vh-280px)] pr-1">
         {[
           { id: 'overview', label: 'Dashboard Overview', icon: <ShieldCheck className="w-5 h-5" /> },
           { id: 'rentals', label: 'Rental Management', icon: <ShoppingBag className="w-5 h-5" /> },
@@ -930,8 +966,9 @@ export default function AdminDashboard({ session, initialData }) {
               setActiveTab(tab.id);
               localStorage.setItem('adminActiveTab', tab.id);
               setStatusMsg({ type: null, text: '' });
+              setIsSidebarOpen(false); // Auto close sidebar on click on mobile
             }}
-            className={`flex items-center gap-3.5 px-4 py-3.5 rounded-lg text-sm font-extrabold uppercase tracking-wider text-left transition-all cursor-pointer ${
+            className={`w-full flex items-center gap-3.5 px-4 py-3.5 rounded-lg text-sm font-extrabold uppercase tracking-wider text-left transition-all cursor-pointer ${
               activeTab === tab.id
                 ? 'bg-[#00B5AD] text-[#FFFFFF] shadow-[0_4px_10px_rgba(0,181,173,0.2)]'
                 : 'text-[#FFFFFF] hover:text-[#00B5AD] hover:bg-[#04282F]/60'
@@ -950,6 +987,7 @@ export default function AdminDashboard({ session, initialData }) {
         <div className="pt-4 mt-4 border-t border-[#00B5AD]/10">
           <button
             onClick={async () => {
+              setIsSidebarOpen(false);
               await fetch('/api/auth/logout', { method: 'POST' });
               window.location.href = '/admin/login';
             }}
