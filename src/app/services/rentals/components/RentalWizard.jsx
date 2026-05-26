@@ -1,0 +1,874 @@
+'use client';
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ShoppingBag, ChevronRight, ChevronLeft, ShieldCheck, AlertCircle, CreditCard, Sparkles, CheckSquare, Square, Info, X } from 'lucide-react';
+
+export default function RentalWizard({ session, initialLures, initialDamagePolicies, initialGeneralImages }) {
+  const router = useRouter();
+  const [step, setStep] = useState(1);
+  const [activeLightboxPolicy, setActiveLightboxPolicy] = useState(null);
+
+  // STEP 1 STATE: Gear Selection
+  const [duration, setDuration] = useState('3'); // '1', '3', '5' days
+  const [poles, setPoles] = useState(1); // 1 to 5 poles
+
+  // STEP 2 STATE: Lures Add-ons (loaded dynamically from database/props)
+  const [lures, setLures] = useState(() => {
+    if (initialLures !== undefined && initialLures !== null) {
+      return initialLures.map(l => ({
+        id: l.id,
+        name: l.name,
+        price: parseFloat(l.price),
+        quantity: 0,
+        image: l.image_url || '/assets/logo 1.jpeg'
+      }));
+    }
+    // Fallback static defaults just in case
+    return [
+      { id: 1, name: 'Crystal Minnow', price: 17.50, quantity: 0, image: '/assets/logo 1.jpeg' },
+      { id: 2, name: 'Dons Potbelly', price: 4.99, quantity: 0, image: '/assets/logo 1.jpeg' },
+      { id: 3, name: 'Storm Shad (3 pack)', price: 9.63, quantity: 0, image: '/assets/logo 1.jpeg' },
+      { id: 4, name: 'Lure Pic 4', price: 6.20, quantity: 0, image: '/assets/logo 1.jpeg' },
+      { id: 5, name: 'Fins Minnie', price: 12.50, quantity: 0, image: '/assets/logo 1.jpeg' },
+      { id: 6, name: 'Popper', price: 13.65, quantity: 0, image: '/assets/logo 1.jpeg' }
+    ];
+  });
+
+  // STEP 3 STATE: Damage Policy
+  const [damageAgreed, setDamageAgreed] = useState(false);
+
+  // Dynamic Damage Policies
+  const policiesList = initialDamagePolicies !== undefined && initialDamagePolicies !== null
+    ? initialDamagePolicies
+    : [
+        { id: 1, name: 'Broken Pole', price: 50.00, image_url: '' },
+        { id: 2, name: 'Strung Reel', price: 50.00, image_url: '' },
+        { id: 3, name: 'Broken Eye', price: 50.00, image_url: '' },
+        { id: 4, name: 'Broken Tacklebox shell', price: 25.00, image_url: '' },
+        { id: 5, name: 'Lost rigging Pliers', price: 10.00, image_url: '' },
+        { id: 6, name: 'Late Return (Over 1 Hour past window)', price: 100.00, image_url: '' }
+      ];
+
+  // STEP 4 STATE: Payment Checkout
+  const [checkoutForm, setCheckoutForm] = useState({
+    cardName: '',
+    cardNumber: '',
+    cardExpiry: '',
+    cardCvc: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [statusMsg, setStatusMsg] = useState({ type: null, text: '' });
+
+  // --- LOCALSTORAGE PERSISTENCE ---
+  // Load state on mount to prevent Next.js hydration mismatch
+  React.useEffect(() => {
+    const savedStep = localStorage.getItem('rental_step');
+    if (savedStep) setStep(parseInt(savedStep, 10));
+
+    const savedDuration = localStorage.getItem('rental_duration');
+    if (savedDuration) setDuration(savedDuration);
+
+    const savedPoles = localStorage.getItem('rental_poles');
+    if (savedPoles) setPoles(parseInt(savedPoles, 10));
+
+    const savedDamageAgreed = localStorage.getItem('rental_damage_agreed');
+    if (savedDamageAgreed) setDamageAgreed(savedDamageAgreed === 'true');
+
+    const savedLures = localStorage.getItem('rental_lures');
+    if (savedLures) {
+      try {
+        const parsedLures = JSON.parse(savedLures);
+        setLures((current) =>
+          current.map((item) => {
+            const savedItem = parsedLures.find((p) => p.id === item.id);
+            return savedItem ? { ...item, quantity: savedItem.quantity } : item;
+          })
+        );
+      } catch (e) {
+        console.error('Failed to restore saved lures:', e);
+      }
+    }
+  }, []);
+
+  // Save states to localStorage when changed
+  React.useEffect(() => {
+    localStorage.setItem('rental_step', step.toString());
+  }, [step]);
+
+  React.useEffect(() => {
+    localStorage.setItem('rental_duration', duration);
+  }, [duration]);
+
+  React.useEffect(() => {
+    localStorage.setItem('rental_poles', poles.toString());
+  }, [poles]);
+
+  React.useEffect(() => {
+    localStorage.setItem('rental_damage_agreed', damageAgreed.toString());
+  }, [damageAgreed]);
+
+  React.useEffect(() => {
+    localStorage.setItem('rental_lures', JSON.stringify(lures.map((l) => ({ id: l.id, quantity: l.quantity }))));
+  }, [lures]);
+
+  // --- CALCULATION LOGIC ---
+  const durationDays = parseInt(duration);
+  // Gear base rate: $25 per pole per day
+  const basePoleRate = 25;
+  const gearPrice = poles * basePoleRate * durationDays;
+
+  // Lures Total
+  const luresPrice = lures.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  // Security Deposit Calculation (Sum of all Damage Policy fees)
+  const securityDeposit = policiesList.reduce((sum, policy) => sum + parseFloat(policy.price), 0);
+
+  // Total Excursion Booking Price
+  const totalPrice = gearPrice + luresPrice + securityDeposit;
+
+  // --- QUANTITY HANDLERS ---
+  const handleLureQty = (id, change) => {
+    setLures((prev) =>
+      prev.map((item) => {
+        if (item.id === id) {
+          const newQty = Math.max(0, Math.min(5, item.quantity + change));
+          return { ...item, quantity: newQty };
+        }
+        return item;
+      })
+    );
+  };
+
+  const handleCheckoutChange = (e) => {
+    setCheckoutForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  // --- ACTION NAVIGATION ---
+  const nextStep = () => {
+    if (step === 3 && !damageAgreed) {
+      alert('You must accept the damage policy before proceeding to checkout.');
+      return;
+    }
+    setStep((prev) => prev + 1);
+  };
+
+  const prevStep = () => {
+    setStep((prev) => prev - 1);
+  };
+
+  const handleCheckout = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setStatusMsg({ type: null, text: '' });
+
+    if (!session) {
+      setStatusMsg({ type: 'error', text: 'You must have a logged-in account to complete transactions.' });
+      setSubmitting(false);
+      return;
+    }
+
+    try {
+      const selectedLures = lures
+        .filter((l) => l.quantity > 0)
+        .map((l) => ({
+          id: l.id,
+          name: l.name,
+          price: l.price,
+          quantity: l.quantity
+        }));
+
+      const payload = {
+        rental_duration: durationDays,
+        pole_quantity: poles,
+        guide_booked: false,
+        damage_agreement: damageAgreed,
+        total_price: totalPrice,
+        security_added: securityDeposit,
+        payment_status: 'paid', // Auto-authorized simulated credit card
+        status: 'confirmed',
+        selectedLures
+      };
+
+      const res = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to complete gear rental booking.');
+      }
+
+      // Clear localStorage state upon successful checkout
+      localStorage.removeItem('rental_step');
+      localStorage.removeItem('rental_duration');
+      localStorage.removeItem('rental_poles');
+      localStorage.removeItem('rental_damage_agreed');
+      localStorage.removeItem('rental_lures');
+
+      setStatusMsg({
+        type: 'success',
+        text: 'Success! Your premium fishing gear rental has been confirmed. Redirecting to your dashboard...'
+      });
+
+      setTimeout(() => {
+        router.push('/profile');
+        router.refresh();
+      }, 2500);
+
+    } catch (error) {
+      console.error('Checkout error:', error);
+      setStatusMsg({ type: 'error', text: error.message || 'An unexpected error occurred.' });
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-10">
+      
+      {/* 1. VISUAL STEP INDICATOR */}
+      <div className="flex justify-between items-center max-w-xl mx-auto border-b border-[#00B5AD]/10 pb-6">
+        {[1, 2, 3, 4].map((num) => (
+          <div key={num} className="flex items-center gap-2">
+            <div
+              className={`w-9 h-9 rounded-full font-black flex items-center justify-center text-xs transition-all duration-300 ${
+                step === num
+                  ? 'bg-[#00B5AD] text-[#FFFFFF] shadow-[0_0_12px_#00B5AD]'
+                  : step > num
+                  ? 'bg-[#04282F] text-[#00B5AD] border border-[#00B5AD]/30'
+                  : 'bg-[#001418] text-[#3B4E5A] border border-[#3B4E5A]/25'
+              }`}
+            >
+              {num}
+            </div>
+            <span
+              className={`text-[10px] font-bold uppercase tracking-wider hidden sm:block ${
+                step === num ? 'text-[#00B5AD]' : 'text-[#6B7A82]'
+              }`}
+            >
+              {num === 1 ? 'Select' : num === 2 ? 'Lures' : num === 3 ? 'Policy' : 'Pay'}
+            </span>
+            {num < 4 && <div className="h-0.5 w-8 bg-[#3B4E5A]/20 hidden sm:block" />}
+          </div>
+        ))}
+      </div>
+
+      {/* 2. DYNAMIC WIZARD SCREENS */}
+
+      {/* STEP 1: RENTAL SELECTION PAGE */}
+      {step === 1 && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          <div className="lg:col-span-7 space-y-6">
+            
+            {/* Toggle Duration */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-bold uppercase tracking-wider font-['Outfit',sans-serif] text-[#FFFFFF]">
+                1. Select Rental Duration
+              </h3>
+              <div className="grid grid-cols-3 gap-4">
+                {[
+                  { value: '1', label: '1 Day', desc: 'Standard Day' },
+                  { value: '3', label: '3 Days', desc: 'Save 10%' },
+                  { value: '5', label: '5 Days', desc: 'Save 20%' }
+                ].map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => setDuration(item.value)}
+                    className={`p-4 rounded-xl border text-center transition-all duration-200 cursor-pointer ${
+                      duration === item.value
+                        ? 'border-[#00B5AD] bg-[#00B5AD]/10 text-[#00B5AD] shadow-[0_4px_10px_rgba(0,181,173,0.15)]'
+                        : 'border-[#00B5AD]/10 bg-[#04282F]/30 hover:border-[#00B5AD]/30 text-[#A0ACB3]'
+                    }`}
+                  >
+                    <span className="block font-black text-sm uppercase">{item.label}</span>
+                    <span className="block text-[9px] font-bold text-[#6B7A82] mt-0.5">{item.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Toggle Quantity */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-bold uppercase tracking-wider font-['Outfit',sans-serif] text-[#FFFFFF]">
+                2. Select Pole Quantity
+              </h3>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => setPoles(num)}
+                    className={`flex-grow py-3 rounded-lg border text-center font-extrabold text-sm transition-all duration-200 cursor-pointer ${
+                      poles === num
+                        ? 'border-[#00B5AD] bg-[#00B5AD]/15 text-[#00B5AD]'
+                        : 'border-[#00B5AD]/10 bg-[#04282F]/30 hover:border-[#00B5AD]/25 text-[#A0ACB3]'
+                    }`}
+                  >
+                    {num} {num === 1 ? 'Pole' : 'Poles'}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] font-semibold text-[#6B7A82] flex items-center gap-1.5 pt-1">
+                <Info className="w-3.5 h-3.5 text-[#00B5AD]" />
+                *Each fishing pole automatically includes a deluxe tacklebox and heavy-duty 30 lb test fishing line.
+              </p>
+            </div>
+
+            {/* Tacklebox Inclusions */}
+            <div className="p-6 rounded-xl border border-[#00B5AD]/15 bg-[#0A424A]/40 space-y-4">
+              <h4 className="text-[#FFFFFF] text-xs font-black uppercase tracking-wider border-b border-[#00B5AD]/10 pb-2 flex items-center gap-2">
+                <ShoppingBag className="w-4 h-4 text-[#00B5AD]" />
+                Included In Your Tacklebox:
+              </h4>
+              <ul className="grid grid-cols-2 gap-3 text-xs font-semibold text-[#A0ACB3]">
+                <li className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#00B5AD]" /> Steel Rigging Pliers
+                </li>
+                <li className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#00B5AD]" /> Two Hook Sizes (Heavy-duty)
+                </li>
+                <li className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#00B5AD]" /> Two Lead Weight Sizes
+                </li>
+                <li className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#00B5AD]" /> Pre-rigged Casting Lures
+                </li>
+              </ul>
+            </div>
+
+          </div>
+
+          {/* Pricing Summary Column */}
+          <div className="lg:col-span-5 bg-[#04282F]/20 border border-[#00B5AD]/10 p-6 rounded-2xl flex flex-col justify-between shadow-lg">
+            <div className="space-y-4">
+              <h4 className="text-[#FFFFFF] text-sm font-bold uppercase tracking-wider border-b border-[#00B5AD]/15 pb-2">
+                Booking Details
+              </h4>
+              <div className="space-y-2.5 text-xs font-semibold text-[#A0ACB3]">
+                <div className="flex justify-between">
+                  <span>Duration selected:</span>
+                  <span className="text-[#FFFFFF]">{durationDays} {durationDays === 1 ? 'Day' : 'Days'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Poles package:</span>
+                  <span className="text-[#FFFFFF]">{poles} {poles === 1 ? 'Pole Bundle' : 'Poles Bundle'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Price per pole / day:</span>
+                  <span className="text-[#FFFFFF]">${basePoleRate}.00</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-[#00B5AD]/10 pt-6 mt-6 space-y-4">
+              <div className="flex justify-between items-baseline">
+                <span className="text-xs font-bold text-[#6B7A82] uppercase">Package Price</span>
+                <span className="text-2xl font-black text-[#00B5AD] font-['Outfit']">${gearPrice}.00</span>
+              </div>
+              <button
+                type="button"
+                onClick={nextStep}
+                className="w-full flex items-center justify-center gap-2 bg-[#00B5AD] hover:bg-[#00A39E] text-[#FFFFFF] py-3.5 rounded-lg text-xs font-extrabold uppercase tracking-widest transition-all cursor-pointer shadow-lg shadow-[#00B5AD]/15"
+              >
+                Add Lures Add-ons <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 2: LURES ADD-ON PAGE */}
+      {step === 2 && (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center border-b border-[#00B5AD]/15 pb-4">
+            <h3 className="text-lg font-bold uppercase tracking-wider font-['Outfit',sans-serif] text-[#FFFFFF] flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-[#00B5AD] animate-pulse" />
+              Add Specialized Island Lures
+            </h3>
+            <span className="text-xs font-bold text-[#6B7A82] uppercase">Optional Add-ons</span>
+          </div>
+
+          {/* Lures Grid */}
+          {lures.length === 0 ? (
+            <div className="text-center py-12 px-4 border border-[#00B5AD]/20 rounded-2xl bg-[#04282F]/20 space-y-3 max-w-xl mx-auto shadow-lg shadow-[#00B5AD]/5">
+              <ShoppingBag className="w-10 h-10 text-[#00B5AD]/60 mx-auto animate-pulse" />
+              <h4 className="text-sm font-extrabold text-[#FFFFFF] uppercase tracking-wider font-['Outfit']">No Add-on Lures Available</h4>
+              <p className="text-xs text-[#A0ACB3] font-semibold leading-relaxed max-w-xs mx-auto">
+                There are no specialized island lures registered in the catalog right now. Click "Damage Policy" below to proceed directly!
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {lures.map((lure) => (
+                <div
+                  key={lure.id}
+                  className="rounded-xl border border-[#00B5AD]/15 bg-[#04282F]/30 overflow-hidden flex flex-col justify-between shadow-md"
+                >
+                  {/* Lure Image */}
+                  <div className="h-52 bg-gradient-to-br from-[#0A424A] to-[#04282F] flex items-center justify-center border-b border-[#00B5AD]/15 relative overflow-hidden">
+                    {lure.image ? (
+                      <img
+                        src={lure.image}
+                        alt={lure.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          const fallback = e.target.parentElement.querySelector('.lure-fallback');
+                          if (fallback) fallback.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div 
+                      className="lure-fallback absolute inset-0 flex items-center justify-center bg-black/10" 
+                      style={{ display: lure.image ? 'none' : 'flex' }}
+                    >
+                      <Sparkles className="w-8 h-8 text-[#00B5AD]/80 drop-shadow-[0_0_10px_#00B5AD]" />
+                    </div>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <h4 className="font-extrabold text-[#FFFFFF] text-sm tracking-wide">{lure.name}</h4>
+                      <span className="text-[#00B5AD] font-bold text-xs">${lure.price.toFixed(2)}</span>
+                    </div>
+
+                    {/* Quantity selector */}
+                    <div className="flex items-center justify-between border border-[#00B5AD]/20 rounded-lg p-1.5 bg-[#001418]/60 mt-2">
+                      <button
+                        type="button"
+                        onClick={() => handleLureQty(lure.id, -1)}
+                        className="w-7 h-7 rounded-md bg-[#04282F] hover:bg-[#00B5AD]/20 text-[#A0ACB3] hover:text-[#00B5AD] font-black flex items-center justify-center cursor-pointer transition-colors"
+                      >
+                        -
+                      </button>
+                      <span className="text-xs font-extrabold text-[#FFFFFF]">{lure.quantity}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleLureQty(lure.id, 1)}
+                        className="w-7 h-7 rounded-md bg-[#04282F] hover:bg-[#00B5AD]/20 text-[#A0ACB3] hover:text-[#00B5AD] font-black flex items-center justify-center cursor-pointer transition-colors"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Nav Controls */}
+          <div className="border-t border-[#00B5AD]/10 pt-6 flex justify-between items-center gap-4">
+            <button
+              type="button"
+              onClick={prevStep}
+              className="flex items-center gap-1 border border-[#6B7A82]/30 text-[#A0ACB3] hover:text-[#FFFFFF] px-5 py-3 rounded-lg text-xs font-extrabold uppercase tracking-wider cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" /> Back
+            </button>
+            <div className="text-right">
+              <span className="block text-[10px] font-bold text-[#6B7A82] uppercase tracking-wider">Lures Total</span>
+              <span className="text-sm font-extrabold text-[#00B5AD]">${luresPrice.toFixed(2)}</span>
+            </div>
+            <button
+              type="button"
+              onClick={nextStep}
+              className="flex items-center gap-1 bg-[#00B5AD] hover:bg-[#00A39E] text-[#FFFFFF] px-6 py-3 rounded-lg text-xs font-extrabold uppercase tracking-wider cursor-pointer shadow-md shadow-[#00B5AD]/10"
+            >
+              Damage Policy <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 3: DAMAGE POLICY PAGE */}
+      {step === 3 && (
+        <div className="space-y-8">
+          <div className="border-b border-[#00B5AD]/15 pb-4 text-center sm:text-left">
+            <h3 className="text-lg font-bold uppercase tracking-wider font-['Outfit',sans-serif] text-[#FFFFFF] flex items-center gap-2 justify-center sm:justify-start">
+              <AlertCircle className="w-5 h-5 text-[#00B5AD] animate-bounce" />
+              Damage & Late Return Policies
+            </h3>
+            <p className="text-xs text-[#6B7A82] font-semibold mt-1">Please inspect and acknowledge rental damage responsibilities before paying.</p>
+          </div>
+
+          {/* Security Deposit Notification Banner */}
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-6 py-8 flex gap-4 items-center animate-[fadeIn_0.4s_ease-out]">
+            <AlertCircle className="w-8 h-8 text-red-400 flex-shrink-0" />
+            <div>
+              <p className="text-xs font-semibold text-red-200 leading-relaxed uppercase tracking-wider">
+                <span className="font-black text-red-400">Security Deposit Notification:</span> An amount of <span className="font-black text-white bg-red-500/20 px-1.5 py-0.5 rounded border border-red-500/30">${securityDeposit.toFixed(2)}</span> has been added to your total as a refundable security deposit.
+                This will be held securely during your rental. If no damage occurs, it will be fully released. In case of damage, applicable fines will be deducted according to the policies below and the remaining balance released.
+              </p>
+            </div>
+          </div>
+
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start overflow-x-hidden p-1">
+            
+            {/* Visual illustrative blocks dynamically loaded from Database / Admin page */}
+            <div className="lg:col-span-5 grid grid-cols-3 gap-4 animate-[slideInRight_0.6s_ease-out]">
+              {policiesList.filter(policy => policy.image_url).map((policy) => (
+                <div
+                  key={policy.id}
+                  onClick={() => {
+                    if (policy.image_url) {
+                      setActiveLightboxPolicy(policy);
+                    }
+                  }}
+                  className={`rounded-xl overflow-hidden border border-[#00B5AD]/10 bg-[#04282F]/40 p-4 space-y-3 text-center shadow-sm flex flex-col items-center justify-center aspect-square relative group select-none ${
+                    policy.image_url ? 'cursor-zoom-in hover:border-[#00B5AD]/30 transition-all hover:scale-[1.03] active:scale-[0.98]' : ''
+                  }`}
+                >
+                  {policy.image_url ? (
+                    <div className="absolute inset-0 w-full h-full">
+                      <img
+                        src={policy.image_url}
+                        alt={policy.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : null}
+                  
+                  {/* Card Content Container */}
+                  <div className="relative z-10 flex flex-col items-center justify-center h-full space-y-2.5">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-white bg-black/40 px-2 py-0.5 rounded shadow-sm drop-shadow-md">
+                      {policy.name}
+                    </span>
+                    <span className="text-[10px] font-extrabold text-[#00B5AD] bg-[#04282F]/80 px-2 py-1 rounded shadow-sm border border-[#00B5AD]/20">
+                      ${parseFloat(policy.price).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+
+              {/* Standalone General Broken Images */}
+              {initialGeneralImages && initialGeneralImages.map((imgUrl, idx) => (
+                <div
+                  key={`general-${idx}`}
+                  onClick={() => {
+                    setActiveLightboxPolicy({ image_url: imgUrl, name: 'General Broken Gear' });
+                  }}
+                  className="rounded-xl overflow-hidden border border-[#00B5AD]/10 bg-[#04282F]/40 p-4 space-y-3 text-center shadow-sm flex flex-col items-center justify-center aspect-square relative group select-none cursor-zoom-in hover:border-[#00B5AD]/30 transition-all hover:scale-[1.03] active:scale-[0.98]"
+                >
+                  <div className="absolute inset-0 w-full h-full">
+                    <img
+                      src={imgUrl}
+                      alt="General Broken Gear"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Dynamic Damage Table */}
+            <div className="lg:col-span-7 bg-[#04282F]/30 border border-[#00B5AD]/15 rounded-2xl overflow-x-auto shadow-lg animate-[slideInLeft_0.6s_ease-out]">
+              <table className="w-full text-left text-xs font-semibold min-w-[450px] sm:min-w-0">
+                <thead className="bg-[#04282F] text-[#FFFFFF] border-b border-[#00B5AD]/25 text-[10px] font-black uppercase tracking-wider">
+                  <tr>
+                    <th className="px-4 py-3.5">Damage Incident Type</th>
+                    <th className="px-4 py-3.5 text-right">Standard Fine Fee</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#00B5AD]/10 text-[#A0ACB3]">
+                  {policiesList.map((policy) => (
+                    <tr key={policy.id} className="hover:bg-[#00B5AD]/5">
+                      <td className="px-4 py-3 font-medium flex items-center gap-2">
+                        {policy.image_url && (
+                          <img
+                            src={policy.image_url}
+                            alt={policy.name}
+                            className="w-6 h-6 rounded-md object-cover border border-[#00B5AD]/20 flex-shrink-0"
+                          />
+                        )}
+                        <span>{policy.name}</span>
+                      </td>
+                      <td className="px-4 py-3 text-right text-[#00B5AD] font-extrabold">
+                        ${parseFloat(policy.price).toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+
+          {/* Controls */}
+          <div className="border-t border-[#00B5AD]/10 pt-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <button
+              type="button"
+              onClick={prevStep}
+              className="flex items-center gap-1 border border-[#6B7A82]/30 text-[#A0ACB3] hover:text-[#FFFFFF] px-5 py-3 rounded-lg text-xs font-extrabold uppercase tracking-wider cursor-pointer whitespace-nowrap"
+            >
+              <ChevronLeft className="w-4 h-4" /> Back
+            </button>
+
+            {/* Interactive Checkbox signature */}
+            <div className="p-4 rounded-xl border border-[#00B5AD]/30 bg-[#00B5AD]/5 flex-1 max-w-xl flex items-start gap-3">
+              <button
+                type="button"
+                onClick={() => setDamageAgreed(!damageAgreed)}
+                className="mt-0.5 text-[#00B5AD] hover:scale-105 transition-transform cursor-pointer"
+              >
+                {damageAgreed ? (
+                  <CheckSquare className="w-5 h-5 fill-[#00B5AD] text-[#001418]" />
+                ) : (
+                  <Square className="w-5 h-5 text-[#00B5AD]/60" />
+                )}
+              </button>
+              <div className="space-y-1 select-none text-left">
+                <h5 className="text-xs font-black uppercase text-[#FFFFFF]">Acknowledge Responsibility</h5>
+                <p className="text-[11px] font-semibold text-[#A0ACB3] leading-relaxed">
+                  I understand and accept full financial responsibility for any damages to the rods, reels, pliers, or tackleboxes, and acknowledge late fee penalties.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={nextStep}
+              disabled={!damageAgreed}
+              className="flex items-center gap-1 bg-[#00B5AD] hover:bg-[#00A39E] disabled:bg-[#00B5AD]/40 text-[#FFFFFF] px-6 py-3 rounded-lg text-xs font-extrabold uppercase tracking-wider cursor-pointer shadow-md shadow-[#00B5AD]/15"
+            >
+              Proceed to Checkout <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 4: CHECKOUT & PAYMENT PAGE */}
+      {step === 4 && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          
+          {/* Form Checkout - 7 Columns */}
+          <div className="lg:col-span-7 space-y-6">
+            <h3 className="text-xl font-bold uppercase tracking-wider font-['Outfit',sans-serif] border-b border-[#00B5AD]/10 pb-3 flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-[#00B5AD]" />
+              Secure Payment Details
+            </h3>
+
+            {statusMsg.text && (
+              <div
+                className={`p-4 rounded-xl text-xs font-bold ${
+                  statusMsg.type === 'success'
+                    ? 'bg-[#00B5AD]/10 border border-[#00B5AD]/30 text-[#00B5AD]'
+                    : 'bg-red-500/10 border border-red-500/30 text-red-400'
+                }`}
+              >
+                <span>{statusMsg.text}</span>
+              </div>
+            )}
+
+            {session ? (
+              <form onSubmit={handleCheckout} className="space-y-4">
+                <div className="space-y-1.5 text-sm">
+                  <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider">Cardholder Name</label>
+                  <input
+                    type="text"
+                    name="cardName"
+                    required
+                    value={checkoutForm.cardName}
+                    onChange={handleCheckoutChange}
+                    className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] placeholder-[#3B4E5A] outline-none"
+                    placeholder="John Doe"
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="col-span-2 space-y-1.5 text-sm">
+                    <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider">Card Number</label>
+                    <input
+                      type="text"
+                      name="cardNumber"
+                      required
+                      maxLength="16"
+                      value={checkoutForm.cardNumber}
+                      onChange={handleCheckoutChange}
+                      className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] placeholder-[#3B4E5A] outline-none"
+                      placeholder="4111 2222 3333 4444"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 text-sm">
+                    <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider">CVC</label>
+                    <input
+                      type="text"
+                      name="cardCvc"
+                      required
+                      maxLength="3"
+                      value={checkoutForm.cardCvc}
+                      onChange={handleCheckoutChange}
+                      className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] placeholder-[#3B4E5A] outline-none"
+                      placeholder="321"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 flex gap-4">
+                  <button
+                    type="button"
+                    onClick={prevStep}
+                    disabled={submitting}
+                    className="flex items-center gap-1 border border-[#6B7A82]/30 text-[#A0ACB3] hover:text-[#FFFFFF] px-5 py-3 rounded-lg text-xs font-extrabold uppercase tracking-wider cursor-pointer"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="flex-grow flex items-center justify-center gap-2 bg-[#00B5AD] hover:bg-[#00A39E] disabled:bg-[#00B5AD]/40 text-[#FFFFFF] font-extrabold py-3.5 rounded-lg uppercase tracking-wider shadow-lg shadow-[#00B5AD]/20 transition-all cursor-pointer"
+                  >
+                    {submitting ? 'Processing Transaction...' : 'Authorize & Pay Now'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="text-center p-8 border border-[#00B5AD]/10 rounded-2xl bg-[#001418]/40 space-y-4">
+                <div className="p-3 bg-[#00B5AD]/10 text-[#00B5AD] w-12 h-12 rounded-full flex items-center justify-center mx-auto">
+                  <AlertCircle className="w-6 h-6 animate-pulse" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-extrabold text-[#FFFFFF] uppercase">Authentication Required</h4>
+                  <p className="text-xs text-[#6B7A82] mt-1 max-w-xs mx-auto">You must log in or register a new customer account to secure rental packages.</p>
+                </div>
+                <div className="flex gap-3 justify-center pt-2">
+                  <Link
+                    href="/login?redirect=/services/rentals"
+                    className="bg-[#00B5AD] hover:bg-[#00A39E] text-[#FFFFFF] font-bold text-xs uppercase tracking-wider px-5 py-3 rounded-lg"
+                  >
+                    Log In
+                  </Link>
+                  <Link
+                    href="/signup?redirect=/services/rentals"
+                    className="border border-[#00B5AD]/35 text-[#00B5AD] hover:bg-[#00B5AD]/10 font-bold text-xs uppercase tracking-wider px-5 py-3 rounded-lg"
+                  >
+                    Register
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Side Summary - 5 Columns */}
+          <div className="lg:col-span-5 bg-[#04282F]/20 border border-[#00B5AD]/10 p-6 rounded-2xl flex flex-col justify-between shadow-xl shadow-[#000000]/25">
+            <div className="space-y-5">
+              <h4 className="text-[#FFFFFF] text-sm font-bold uppercase tracking-wider border-b border-[#00B5AD]/15 pb-2">
+                Booking Summary
+              </h4>
+
+              {/* Items Summary list */}
+              <div className="space-y-3.5 text-xs font-semibold text-[#A0ACB3]">
+                <div className="flex justify-between">
+                  <span>Duration:</span>
+                  <span className="text-[#FFFFFF]">{durationDays} Days</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Quantity:</span>
+                  <span className="text-[#FFFFFF]">{poles} {poles === 1 ? 'Pole Bundle' : 'Poles Bundle'}</span>
+                </div>
+                <div className="flex justify-between border-b border-[#00B5AD]/10 pb-2.5">
+                  <span>Base Gear Rental:</span>
+                  <span className="text-[#FFFFFF]">${gearPrice}.00</span>
+                </div>
+
+                {/* Show lures list if any */}
+                {lures.some((l) => l.quantity > 0) && (
+                  <div className="space-y-2 border-b border-[#00B5AD]/10 pb-2.5">
+                    <span className="block text-[9px] font-bold text-[#6B7A82] uppercase tracking-wider">Lure Add-ons</span>
+                    {lures
+                      .filter((l) => l.quantity > 0)
+                      .map((l) => (
+                        <div key={l.id} className="flex justify-between text-[11px] text-[#A0ACB3]">
+                          <span>{l.name} (x{l.quantity})</span>
+                          <span className="text-[#FFFFFF]">${(l.price * l.quantity).toFixed(2)}</span>
+                        </div>
+                      ))}
+                  </div>
+                )}
+
+                <div className="flex justify-between text-xs font-bold pt-1.5">
+                  <span>Damage Agreement:</span>
+                  <span className="text-[#00B5AD] uppercase text-[10px]">Acknowledge Signed</span>
+                </div>
+
+                <div className="flex justify-between text-xs font-bold pt-1.5 border-t border-[#00B5AD]/10 mt-2 pt-2">
+                  <span>Refundable Security Fee:</span>
+                  <span className="text-[#00B5AD]">${securityDeposit.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-[#00B5AD]/10 pt-6 mt-6 flex justify-between items-baseline">
+              <span className="text-xs font-extrabold text-[#6B7A82] uppercase tracking-wider">Estimated Total</span>
+              <span className="text-3xl font-black text-[#00B5AD] font-['Outfit']">${totalPrice.toFixed(2)}</span>
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* 3. LIGHTBOX MODAL FOR DYNAMIC DAMAGE POLICY IMAGES */}
+      {activeLightboxPolicy && (
+        <div
+          className="fixed top-28 bottom-0 left-0 right-0 z-50 flex items-center justify-center bg-[#001418]/95 backdrop-blur-md p-4 sm:p-6 animate-[fadeIn_0.2s_ease-out]"
+          onClick={() => setActiveLightboxPolicy(null)}
+        >
+          {/* Modal Container */}
+          <div
+            className="bg-[#04282F]/90 border border-[#00B5AD]/20 max-w-2xl w-full rounded-2xl p-6 sm:p-8 relative flex flex-col gap-6 shadow-2xl shadow-black/80 animate-[fadeIn_0.3s_ease-out] cursor-default"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setActiveLightboxPolicy(null)}
+              className="absolute top-4 right-4 z-30 p-2 rounded-full bg-[#001418]/90 hover:bg-[#00B5AD] hover:text-white border border-[#00B5AD]/30 text-white cursor-pointer transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Image Box */}
+            <div className="w-full h-60 sm:h-[350px] rounded-xl overflow-hidden border border-[#00B5AD]/15 bg-[#001418] flex items-center justify-center relative shadow-inner">
+              <img
+                src={activeLightboxPolicy.image_url}
+                alt={activeLightboxPolicy.name}
+                className="w-full h-full object-contain"
+              />
+            </div>
+
+            {/* Broken Images Gallery */}
+            {activeLightboxPolicy.broken_images && activeLightboxPolicy.broken_images.length > 0 && (
+              <div className="space-y-2 pt-2">
+                <span className="block text-[10px] font-black text-[#6B7A82] uppercase tracking-wider">Example Damage Images</span>
+                <div className="flex flex-wrap gap-3">
+                  {activeLightboxPolicy.broken_images.map((img, idx) => (
+                    <div key={idx} className="w-20 h-20 rounded-lg overflow-hidden border border-red-500/30 bg-[#001418] shadow-sm">
+                      <img src={img} alt={`Broken example ${idx + 1}`} className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Details Footer */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-[#00B5AD]/15 pt-4">
+              <div className="space-y-1">
+                <span className="block text-[10px] font-black text-[#00B5AD] uppercase tracking-wider">Selected Damage Gear</span>
+                <h4 className="text-[#FFFFFF] text-2xl sm:text-3xl font-black font-['Outfit'] uppercase tracking-wide leading-tight">
+                  {activeLightboxPolicy.name}
+                </h4>
+              </div>
+              <div className="text-left sm:text-right flex-shrink-0">
+                <span className="block text-[10px] font-black text-[#6B7A82] uppercase tracking-wider">Standard Incident Fee</span>
+                <span className="text-3xl font-black text-red-500 font-['Outfit'] drop-shadow-[0_0_10px_rgba(239,68,68,0.2)]">
+                  ${parseFloat(activeLightboxPolicy.price).toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

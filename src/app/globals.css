@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+:root {
+  --background: #001418;
+  --foreground: #ffffff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
+
+body {
+  background: linear-gradient(to bottom, #0A424A, #04282F 50%, #001418);
+  background-attachment: fixed;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #001418;
+}
+::-webkit-scrollbar-thumb {
+  background: #0A424A;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00B5AD;
+}
+
+/* Custom Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Header Hover Banner (only active when hovered with a cursor) */
+@media (hover: hover) {
+  .group:hover .nav-hover-banner {
+    opacity: 1 !important;
+  }
+}
+

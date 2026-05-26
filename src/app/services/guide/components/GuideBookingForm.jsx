@@ -1,0 +1,226 @@
+'use client';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Clock, Calendar, MapPin, CreditCard, CheckCircle, ArrowRight } from 'lucide-react';
+
+export default function GuideBookingForm({ session }) {
+  const [formData, setFormData] = useState({
+    date: '',
+    hours: '2',
+    pickupLocation: '',
+    cardName: '',
+    cardNumber: '',
+    cardExpiry: '',
+    cardCvc: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [status, setStatus] = useState({ type: null, text: '' });
+  const router = useRouter();
+
+  const handleChange = (e) => {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const pricePerHour = 100;
+  const totalPrice = parseInt(formData.hours) * pricePerHour;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setStatus({ type: null, text: '' });
+
+    // Client-side validations
+    if (!formData.date) {
+      setStatus({ type: 'error', text: 'Please select an excursion date.' });
+      setSubmitting(false);
+      return;
+    }
+    if (!formData.pickupLocation.trim()) {
+      setStatus({ type: 'error', text: 'Please specify a pickup location.' });
+      setSubmitting(false);
+      return;
+    }
+
+    try {
+      // Send mock booking post
+      const payload = {
+        rental_duration: null,
+        pole_quantity: null,
+        guide_booked: true,
+        guide_hours: parseInt(formData.hours),
+        guide_date: formData.date,
+        guide_pickup_location: formData.pickupLocation,
+        damage_agreement: true, // Auto-agree for guides
+        total_price: totalPrice,
+        payment_status: 'paid', // Auto paid on checkout
+        status: 'confirmed'
+      };
+
+      const res = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to complete guided charter booking');
+      }
+
+      setStatus({
+        type: 'success',
+        text: 'Your Guided Charter has been reserved successfully! Booking code generated. Redirecting to your profile...'
+      });
+
+      setTimeout(() => {
+        router.push('/profile');
+        router.refresh();
+      }, 2500);
+
+    } catch (error) {
+      console.error('Booking submission error:', error);
+      setStatus({ type: 'error', text: error.message || 'Failed to process booking. Please try again.' });
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5 text-sm">
+      {status.text && (
+        <div
+          className={`p-4 rounded-xl text-xs font-bold flex items-start gap-2.5 ${
+            status.type === 'success'
+              ? 'bg-[#00B5AD]/10 border border-[#00B5AD]/30 text-[#00B5AD]'
+              : 'bg-red-500/10 border border-red-500/30 text-red-400'
+          }`}
+        >
+          {status.type === 'success' && <CheckCircle className="w-4 h-4 flex-shrink-0" />}
+          <span>{status.text}</span>
+        </div>
+      )}
+
+      {/* Date & Hours Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider flex items-center gap-1">
+            <Calendar className="w-3.5 h-3.5 text-[#00B5AD]" />
+            Charter Date
+          </label>
+          <input
+            type="date"
+            name="date"
+            required
+            value={formData.date}
+            onChange={handleChange}
+            min={new Date().toISOString().split('T')[0]}
+            className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] outline-none"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider flex items-center gap-1">
+            <Clock className="w-3.5 h-3.5 text-[#00B5AD]" />
+            Duration (Hours)
+          </label>
+          <select
+            name="hours"
+            value={formData.hours}
+            onChange={handleChange}
+            className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] outline-none"
+          >
+            <option value="2">2 Hours Excursion</option>
+            <option value="3">3 Hours Excursion</option>
+            <option value="4">4 Hours Excursion</option>
+            <option value="6">6 Hours Excursion (Half Day)</option>
+            <option value="8">8 Hours Excursion (Full Day)</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Pickup Location */}
+      <div className="space-y-1.5">
+        <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider flex items-center gap-1">
+          <MapPin className="w-3.5 h-3.5 text-[#00B5AD]" />
+          Pickup Point / Resort Address
+        </label>
+        <input
+          type="text"
+          name="pickupLocation"
+          required
+          value={formData.pickupLocation}
+          onChange={handleChange}
+          placeholder="e.g. Sapphire Beach Resort Lobby, Coki Beach entrance..."
+          className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] placeholder-[#3B4E5A] outline-none"
+        />
+      </div>
+
+      {/* Secure simulated card credentials */}
+      <div className="border-t border-[#00B5AD]/10 pt-4 space-y-4">
+        <span className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider flex items-center gap-1.5">
+          <CreditCard className="w-4 h-4 text-[#00B5AD]" />
+          Simulated Payment Checkout (Visa / Mastercard)
+        </span>
+
+        <div className="space-y-3.5 p-4 rounded-xl bg-[#001418]/60 border border-[#00B5AD]/10">
+          <div className="space-y-1.5">
+            <label className="block text-[10px] font-bold text-[#6B7A82] uppercase tracking-wider">Cardholder Name</label>
+            <input
+              type="text"
+              name="cardName"
+              required
+              value={formData.cardName}
+              onChange={handleChange}
+              placeholder="John Doe"
+              className="w-full bg-[#001418] border border-[#00B5AD]/25 focus:border-[#00B5AD] rounded-lg px-3 py-2.5 text-xs text-[#FFFFFF]"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2 space-y-1.5">
+              <label className="block text-[10px] font-bold text-[#6B7A82] uppercase tracking-wider">Card Number</label>
+              <input
+                type="text"
+                name="cardNumber"
+                required
+                maxLength="16"
+                value={formData.cardNumber}
+                onChange={handleChange}
+                placeholder="4111 2222 3333 4444"
+                className="w-full bg-[#001418] border border-[#00B5AD]/25 focus:border-[#00B5AD] rounded-lg px-3 py-2.5 text-xs text-[#FFFFFF]"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-bold text-[#6B7A82] uppercase tracking-wider">CVC</label>
+              <input
+                type="text"
+                name="cardCvc"
+                required
+                maxLength="3"
+                value={formData.cardCvc}
+                onChange={handleChange}
+                placeholder="321"
+                className="w-full bg-[#001418] border border-[#00B5AD]/25 focus:border-[#00B5AD] rounded-lg px-3 py-2.5 text-xs text-[#FFFFFF]"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Pricing Summary & Checkout CTA */}
+      <div className="border-t border-[#00B5AD]/10 pt-4 flex items-center justify-between gap-4">
+        <div>
+          <span className="block text-[10px] font-bold text-[#6B7A82] uppercase tracking-wider">Excursion Total</span>
+          <span className="text-[#00B5AD] text-2xl font-black font-['Outfit']">${totalPrice}.00</span>
+        </div>
+
+        <button
+          type="submit"
+          disabled={submitting}
+          className="flex items-center gap-1.5 bg-[#00B5AD] hover:bg-[#00A39E] disabled:bg-[#00B5AD]/50 text-[#FFFFFF] text-xs font-bold uppercase tracking-wider px-6 py-3.5 rounded-lg shadow-lg shadow-[#00B5AD]/15 transition-all hover:scale-105 cursor-pointer"
+        >
+          {submitting ? 'Confirming...' : 'Authorize & Reserve'}
+          {!submitting && <ArrowRight className="w-4 h-4" />}
+        </button>
+      </div>
+    </form>
+  );
+}

@@ -1,0 +1,178 @@
+{
+  "users": [
+    {
+      "id": "d9e03d4a-5b12-4f7f-a64d-ec12a14e9f5e",
+      "email": "admin@reelproblems.com",
+      "password_hash": "0b5f4b5c025107fed0b6635c6fc9df23:f2adf06c3989ff4ae16dd4c3b44f8849a91b3cc0c0fd78141efaf87e22ec616841c50e6806b5eaac987161d3154b142857cf0ff2cee4385022e5d169ea081529",
+      "full_name": "Administrator",
+      "phone": "770-910-0503",
+      "role": "admin",
+      "created_at": "2026-05-24T10:29:33.149Z"
+    },
+    {
+      "id": "bae1f5ce-c88d-41bb-8fa9-8448eca9b70e",
+      "email": "rehman@gmail.com",
+      "password_hash": "fe118c11c218085ffe224eb50ceec3ed:554a4c70f744c5f7df02519421fc874ba36f7a45f5773c8646f3607b6de0efed073064aacd4269e01dd99ffdd3a1f72b34086067a4fc7b42336bd271a8979b3b",
+      "full_name": "rehman",
+      "phone": "80234859243",
+      "role": "customer",
+      "created_at": "2026-05-24T14:40:38.004Z"
+    },
+    {
+      "id": "30134612-7690-4954-83af-794fcc8e97cb",
+      "email": "rehm@gmail.com",
+      "password_hash": "c5031e1e43c5de9c52a7985e36c540d0:f9db66dc20fda72f4e1ab7731014b3ea1e507519a1edc041236fc1c50007d748b6fbccb335aa727374d3ef3d5a7da0bb4ca751ae8f4d0518a8807acabb6b2125",
+      "full_name": "rehm",
+      "phone": "457034284694",
+      "role": "customer",
+      "created_at": "2026-05-24T17:24:26.292Z"
+    }
+  ],
+  "bookings": [],
+  "booking_lures": [],
+  "lures": [],
+  "inventory": [
+    {
+      "id": 1,
+      "item_name": "Fishing Poles",
+      "total_qty": 20,
+      "available_qty": 20,
+      "damaged_qty": 0,
+      "missing_qty": 0
+    },
+    {
+      "id": 2,
+      "item_name": "Tackleboxes",
+      "total_qty": 20,
+      "available_qty": 20,
+      "damaged_qty": 0,
+      "missing_qty": 0
+    },
+    {
+      "id": 3,
+      "item_name": "Pliers",
+      "total_qty": 20,
+      "available_qty": 20,
+      "damaged_qty": 0,
+      "missing_qty": 0
+    },
+    {
+      "id": 4,
+      "item_name": "Hooks (pack)",
+      "total_qty": 50,
+      "available_qty": 50,
+      "damaged_qty": 0,
+      "missing_qty": 0
+    },
+    {
+      "id": 5,
+      "item_name": "Weights (pack)",
+      "total_qty": 50,
+      "available_qty": 50,
+      "damaged_qty": 0,
+      "missing_qty": 0
+    }
+  ],
+  "damages": [],
+  "fish_species": [
+    {
+      "id": 1,
+      "name": "Snook",
+      "description": "A highly prized, aggressive game fish found along the sandy shores of St. Thomas. Strong fighters with a distinct black lateral line running from gills to tail.",
+      "image_url": "/assets/fish_snook.png"
+    },
+    {
+      "id": 2,
+      "name": "Tarpon",
+      "description": "Known globally as the \"Silver King,\" these massive, acrobatic fish frequent shallow bays and coastal channels. They provide a breathtaking, leap-heavy fight.",
+      "image_url": "/assets/fish_tarpon.png"
+    },
+    {
+      "id": 3,
+      "name": "Barracuda",
+      "description": "Fierce ambush predators with razor-sharp teeth. They lurk near rocky shorelines and reefs, providing exciting fast-paced strikes and visual attacks.",
+      "image_url": "/assets/new_shore_3.png"
+    }
+  ],
+  "restaurants": [
+    {
+      "id": 1,
+      "name": "Red Hook Tavern & Grill",
+      "map_link": "Red Hook Marina Rd, St. Thomas",
+      "distance": "0.2 miles from harbor",
+      "fee_estimate": "$15.00 per fish",
+      "image_url": "/assets/logo 1.jpeg"
+    },
+    {
+      "id": 2,
+      "name": "Shoreline Seaside Grille",
+      "map_link": "Sapphire Beach, St. Thomas",
+      "distance": "2.5 miles from harbor",
+      "fee_estimate": "$18.00 per fish",
+      "image_url": "/assets/logo 1.jpeg"
+    }
+  ],
+  "site_content": [
+    {
+      "section_key": "homepage",
+      "content_data": {
+        "hero": {
+          "title": "Shore Fishing Rentals in St. Thomas",
+          "subtitle": "Experience premier island-style shoreline fishing with high-performance rental gear and expert local guidance."
+        },
+        "whyChooseUs": {
+          "text": "At Reel Fishing Company, we believe the ultimate thrill of fishing lies right on the shores of Saint Thomas. We supply professional-grade reels, tackle, and locally handpicked lures, empowering you to navigate the pristine Caribbean coasts with confidence. Whether you are aiming for dynamic strikes from Tarpon or seeking a relaxing day casting by the crystal-clear tides, our seamless rental platform and local, insider knowledge provide everything required for a premium fishing adventure."
+        }
+      }
+    },
+    {
+      "section_key": "locations",
+      "content_data": {
+        "spots": [
+          {
+            "name": "Hull Bay Rock Points",
+            "terrain": "Rocky shoreline, shallow flats, coral drop-offs",
+            "coordinates": "18.3711° N, 64.9542° W",
+            "description": "Hull Bay is a local favorite, offering excellent protection from strong currents. The rocky edges on both sides of the sandy beach are premium hideouts for large Snook and active school Tarpon, especially during sunrise and sunset.",
+            "bestTime": "Early Morning (5:30 AM - 8:00 AM)",
+            "lures": "Crystal Minnow, Popper",
+            "difficulty": "Beginner-Intermediate",
+            "image": "/assets/spot_hull_bay.png"
+          },
+          {
+            "name": "Sapphire Beach Point",
+            "terrain": "Sandy shoals, seagrass flats, current-swept point",
+            "coordinates": "18.3347° N, 64.8519° W",
+            "description": "The shallow sandy point stretching off Sapphire Beach is a highway for fast-moving Jacks, Bonefish, and cruising Barracuda. Wade casting here is highly productive with light tackle or poppers during active high tides.",
+            "bestTime": "Incoming High Tide",
+            "lures": "Popper, Fins Minnie",
+            "difficulty": "Beginner",
+            "image": "/assets/spot_sapphire.png"
+          },
+          {
+            "name": "Coki Point Cliffs",
+            "terrain": "Deep volcanic rock shelf, drop-off, clear visibility",
+            "coordinates": "18.3494° N, 64.8661° W",
+            "description": "Just past the beach, the volcanic cliffs of Coki Point drop off rapidly into 15-20 feet of pristine clear water. This sudden depth change attracts aggressive predators like Barracuda, Mutton Snappers, and Houndfish.",
+            "bestTime": "Late Afternoon (3:30 PM - 6:00 PM)",
+            "lures": "Storm Shad, Crystal Minnow",
+            "difficulty": "Advanced (Slippery rocks)",
+            "image": "/assets/spot_coki.png"
+          },
+          {
+            "name": "Red Hook Harbor Outlet",
+            "terrain": "Deep channels, concrete seawall, tidal current rip",
+            "coordinates": "18.3242° N, 64.8503° W",
+            "description": "The channel current flowing in and out of Red Hook harbor is rich in baitfish. Large Tarpon (the Silver King) wait in the deep shadows of the channel. Cast heavy weights or deep-running lures along the seawalls.",
+            "bestTime": "Night & Twilight (7:00 PM - 9:00 PM)",
+            "lures": "Storm Shad, Popper",
+            "difficulty": "Intermediate",
+            "image": "/assets/spot_red_hook.png"
+          }
+        ]
+      }
+    }
+  ],
+  "contact_messages": [],
+  "damage_policies": []
+}
