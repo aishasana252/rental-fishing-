@@ -32,11 +32,26 @@ export async function POST(req) {
       await fs.mkdir(uploadDir, { recursive: true });
     }
 
-    const filePath = path.join(uploadDir, filename);
+    let fileUrl;
     
-    await fs.writeFile(filePath, buffer);
-
-    const fileUrl = `/uploads/${filename}`;
+    // On serverless environments like Vercel, the file system is read-only.
+    // We try to save locally first (for development), and if that fails or we are in production,
+    // we fall back to a Base64 Data URL which stores the image directly in the database.
+    try {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        // Force base64 in production to avoid ephemeral filesystem loss on Vercel
+        throw new Error('Vercel read-only filesystem');
+      }
+      
+      const filePath = path.join(uploadDir, filename);
+      await fs.writeFile(filePath, buffer);
+      fileUrl = `/uploads/${filename}`;
+    } catch (fsError) {
+      console.warn('Filesystem write failed or bypassed. Falling back to Base64 data URL for Vercel deployment:', fsError.message);
+      const mimeType = file.type || 'image/jpeg';
+      const base64Data = buffer.toString('base64');
+      fileUrl = `data:${mimeType};base64,${base64Data}`;
+    }
 
     return NextResponse.json({ success: true, url: fileUrl });
   } catch (error) {
