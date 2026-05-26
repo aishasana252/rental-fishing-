@@ -7,6 +7,63 @@ import {
   Fish, Waves, User, Lock, Save, Eye, EyeOff, XCircle, LogOut
 } from 'lucide-react';
 
+// Automatic client-side image compression utility
+const compressImage = (file, maxWidth = 1000, quality = 0.75, returnBase64 = false) => {
+  return new Promise((resolve, reject) => {
+    // If the file is not an image, resolve with the original file
+    if (!file.type.startsWith('image/')) {
+      resolve(returnBase64 ? '' : file);
+      return;
+    }
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        // Downscale to maxWidth if exceeded
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        if (returnBase64) {
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(dataUrl);
+        } else {
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error('Canvas compression failed'));
+                return;
+              }
+              const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            },
+            'image/jpeg',
+            quality
+          );
+        }
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+};
+
 export default function AdminDashboard({ session, initialData }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
@@ -269,16 +326,23 @@ export default function AdminDashboard({ session, initialData }) {
   };
   // 2.5 Image Upload Handler for CMS
   const handleImageUpload = async (e, section) => {
-    const file = e.target.files[0];
+    let file = e.target.files[0];
     if (!file) return;
 
     setUploadingImage(true);
     setStatusMsg({ type: null, text: '' });
 
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
+      // Auto compress the image client-side to keep size small and load times instant!
+      try {
+        file = await compressImage(file, 1000, 0.75, false);
+      } catch (compErr) {
+        console.warn('Image compression bypassed, uploading original:', compErr);
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
       const res = await fetch('/api/admin/upload', {
         method: 'POST',
         body: formData,
@@ -400,19 +464,24 @@ export default function AdminDashboard({ session, initialData }) {
     }
   };
 
-  // Handle Fish Image Upload (Base64 conversion)
-  const handleFishImageChange = (e) => {
+  const handleFishImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert('Image file size must be less than 2MB.');
-        return;
+      setUploadingImage(true);
+      try {
+        // Compress to maximum 800px width with 70% quality JPEG Base64
+        const compressedBase64 = await compressImage(file, 800, 0.7, true);
+        setFishForm((prev) => ({ ...prev, imageUrl: compressedBase64 }));
+      } catch (err) {
+        console.warn('Image compression failed, using original reader:', err);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setFishForm((prev) => ({ ...prev, imageUrl: reader.result }));
+        };
+        reader.readAsDataURL(file);
+      } finally {
+        setUploadingImage(false);
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFishForm((prev) => ({ ...prev, imageUrl: reader.result }));
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -464,19 +533,24 @@ export default function AdminDashboard({ session, initialData }) {
     }
   };
 
-  // Handle Spot Image Upload (Base64 conversion)
-  const handleSpotImageChange = (e) => {
+  const handleSpotImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert('Image file size must be less than 2MB.');
-        return;
+      setUploadingImage(true);
+      try {
+        // Compress to maximum 800px width with 70% quality JPEG Base64
+        const compressedBase64 = await compressImage(file, 800, 0.7, true);
+        setSpotForm((prev) => ({ ...prev, image: compressedBase64 }));
+      } catch (err) {
+        console.warn('Image compression failed, using original reader:', err);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setSpotForm((prev) => ({ ...prev, image: reader.result }));
+        };
+        reader.readAsDataURL(file);
+      } finally {
+        setUploadingImage(false);
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setSpotForm((prev) => ({ ...prev, image: reader.result }));
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -533,19 +607,24 @@ export default function AdminDashboard({ session, initialData }) {
     }
   };
 
-  // Handle Lure Image Upload (Base64 conversion)
-  const handleImageFileChange = (e) => {
+  const handleImageFileChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert('Image file size must be less than 2MB.');
-        return;
+      setUploadingImage(true);
+      try {
+        // Compress to maximum 800px width with 70% quality JPEG Base64
+        const compressedBase64 = await compressImage(file, 800, 0.7, true);
+        setLureForm((prev) => ({ ...prev, imageUrl: compressedBase64 }));
+      } catch (err) {
+        console.warn('Image compression failed, using original reader:', err);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setLureForm((prev) => ({ ...prev, imageUrl: reader.result }));
+        };
+        reader.readAsDataURL(file);
+      } finally {
+        setUploadingImage(false);
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLureForm((prev) => ({ ...prev, imageUrl: reader.result }));
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -601,23 +680,27 @@ export default function AdminDashboard({ session, initialData }) {
     }
   };
 
-  // Handle Damage Policy Image Upload (Base64 conversion)
-  const handleDamagePolicyImageChange = (e) => {
+  const handleDamagePolicyImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert('Image file size must be less than 2MB.');
-        return;
+      setUploadingImage(true);
+      try {
+        // Compress to maximum 800px width with 70% quality JPEG Base64
+        const compressedBase64 = await compressImage(file, 800, 0.7, true);
+        setDamagePolicyForm((prev) => ({ ...prev, imageUrl: compressedBase64 }));
+      } catch (err) {
+        console.warn('Image compression failed, using original reader:', err);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setDamagePolicyForm((prev) => ({ ...prev, imageUrl: reader.result }));
+        };
+        reader.readAsDataURL(file);
+      } finally {
+        setUploadingImage(false);
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setDamagePolicyForm((prev) => ({ ...prev, imageUrl: reader.result }));
-      };
-      reader.readAsDataURL(file);
     }
   };
 
-  // Handle General Broken Images Upload
   const handleGeneralBrokenImagesUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -627,7 +710,14 @@ export default function AdminDashboard({ session, initialData }) {
 
     try {
       const uploadedUrls = [];
-      for (const file of files) {
+      for (let file of files) {
+        // Auto compress the image client-side to keep size small and load times instant!
+        try {
+          file = await compressImage(file, 1000, 0.75, false);
+        } catch (compErr) {
+          console.warn('Image compression bypassed for general upload, uploading original:', compErr);
+        }
+
         const formData = new FormData();
         formData.append('file', file);
         const res = await fetch('/api/admin/upload', {
