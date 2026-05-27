@@ -50,6 +50,7 @@ export default function HeroSlider({ cms }) {
 
   const slides = baseSlides.map((slide, idx) => ({
     ...slide,
+    image: cmsSlides[idx]?.image || slide.image,
     title: cmsSlides[idx]?.title || slide.defaultTitle,
     subtitle: cmsSlides[idx]?.subtitle || slide.defaultSubtitle,
     description: cmsSlides[idx]?.description || slide.defaultDescription

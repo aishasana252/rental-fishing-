@@ -1,9 +1,9 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Clock, Calendar, MapPin, CreditCard, CheckCircle, ArrowRight } from 'lucide-react';
+import { Clock, Calendar, MapPin, CreditCard, CheckCircle, ArrowRight, User } from 'lucide-react';
 
-export default function GuideBookingForm({ session }) {
+export default function GuideBookingForm({ session, initialGuides = [] }) {
   const [formData, setFormData] = useState({
     date: '',
     hours: '2',
@@ -122,9 +122,19 @@ export default function GuideBookingForm({ session }) {
             className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] outline-none"
           >
             <option value="First Available (Assign Best Expert)">First Available (Assign Best Expert)</option>
-            <option value="Capt. Dan (Shore Cast Master - 15+ Yrs Exp)">Capt. Dan (Shore Cast Master)</option>
-            <option value="Sarah (Fly & Wading Pro - 8+ Yrs Exp)">Sarah (Fly & Wading Pro)</option>
-            <option value="Marcus (Tarpon Secret Spots - 10+ Yrs Exp)">Marcus (Tarpon Secret Spots)</option>
+            {initialGuides && initialGuides.length > 0 ? (
+              initialGuides.map((guide) => (
+                <option key={guide.id} value={`${guide.name} (${guide.experience || 'Pro Expert'})`}>
+                  {guide.name} ({guide.experience || 'Pro Expert'})
+                </option>
+              ))
+            ) : (
+              <>
+                <option value="Capt. Dan (Shore Cast Master - 15+ Yrs Exp)">Capt. Dan (Shore Cast Master)</option>
+                <option value="Sarah (Fly & Wading Pro - 8+ Yrs Exp)">Sarah (Fly & Wading Pro)</option>
+                <option value="Marcus (Tarpon Secret Spots - 10+ Yrs Exp)">Marcus (Tarpon Secret Spots)</option>
+              </>
+            )}
           </select>
         </div>
 

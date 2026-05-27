@@ -1,11 +1,20 @@
 import React from 'react';
 import Link from 'next/link';
 import { getSession } from '@/lib/auth';
+import { query } from '@/lib/db';
 import { Compass, Calendar, Clock, MapPin, CheckCircle, ShieldAlert, DollarSign } from 'lucide-react';
 import GuideBookingForm from './components/GuideBookingForm';
 
 export default async function GuidePage() {
   const session = await getSession();
+
+  let guides = [];
+  try {
+    const res = await query('SELECT * FROM guides ORDER BY id ASC;');
+    guides = res.rows;
+  } catch (error) {
+    console.error('Failed to load guides in page.js:', error);
+  }
 
   const inclusions = [
     'Direct resort or harbor pickup & drop-off',
@@ -75,7 +84,7 @@ export default async function GuidePage() {
           </h3>
 
           {session ? (
-            <GuideBookingForm session={session} />
+            <GuideBookingForm session={session} initialGuides={guides} />
           ) : (
             <div className="text-center py-12 px-4 space-y-6">
               <div className="p-4 rounded-full bg-[#3B4E5A]/10 border border-[#3B4E5A]/25 w-16 h-16 flex items-center justify-center mx-auto text-[#6B7A82]">

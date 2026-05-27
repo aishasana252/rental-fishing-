@@ -90,6 +90,17 @@ export default function AdminDashboard({ session, initialData }) {
   const [generalBrokenImages, setGeneralBrokenImages] = useState(
     initialData.cms?.find(c => c.section_key === 'general_broken_images')?.content_data?.images || []
   );
+  
+  // Guides State
+  const [guides, setGuides] = useState(initialData.guides || []);
+  const [editingGuideId, setEditingGuideId] = useState(null);
+  const [guideForm, setGuideForm] = useState({ name: '', experience: '', description: '', imageUrl: '' });
+
+  // Edit Mode Trackers for Other Catalogs
+  const [editingLureId, setEditingLureId] = useState(null);
+  const [editingFishId, setEditingFishId] = useState(null);
+  const [editingPolicyId, setEditingPolicyId] = useState(null);
+  const [editingSpotIndex, setEditingSpotIndex] = useState(null);
 
   // Fishing Spots state — extracted from the site_content locations CMS
   const spotsData = initialData.cms.find(c => c.section_key === 'locations');
@@ -889,6 +900,178 @@ export default function AdminDashboard({ session, initialData }) {
     }
   };
 
+  // --- CATALOG EDIT ACTIONS & GUIDES CRUD ---
+  
+  // Guides CRUD handlers
+  const handleStartEditGuide = (guide) => {
+    setEditingGuideId(guide.id);
+    setGuideForm({
+      name: guide.name,
+      experience: guide.experience || '',
+      description: guide.description || '',
+      imageUrl: guide.image_url || ''
+    });
+  };
+
+  const handleCancelEditGuide = () => {
+    setEditingGuideId(null);
+    setGuideForm({ name: '', experience: '', description: '', imageUrl: '' });
+  };
+
+  const handleGuideImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setUploadingImage(true);
+      try {
+        const compressedBase64 = await compressImage(file, 800, 0.7, true);
+        setGuideForm((prev) => ({ ...prev, imageUrl: compressedBase64 }));
+      } catch (err) {
+        console.warn('Image compression failed, using original reader:', err);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setGuideForm((prev) => ({ ...prev, imageUrl: reader.result }));
+        };
+        reader.readAsDataURL(file);
+      } finally {
+        setUploadingImage(false);
+      }
+    }
+  };
+
+  const handleAddGuide = async (e) => {
+    e.preventDefault();
+    if (!guideForm.name) {
+      alert('Guide Name is required.');
+      return;
+    }
+    setLoading(true);
+    setStatusMsg({ type: null, text: '' });
+    try {
+      const body = {
+        name: guideForm.name,
+        experience: guideForm.experience,
+        description: guideForm.description,
+        image_url: guideForm.imageUrl || '/assets/logo 1.jpeg'
+      };
+
+      if (editingGuideId) {
+        body.id = editingGuideId;
+        const res = await fetch('/api/admin/guides', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to update guide.');
+
+        setGuides((prev) => prev.map((g) => (g.id === editingGuideId ? data.guide : g)));
+        setEditingGuideId(null);
+        setStatusMsg({ type: 'success', text: 'Guide details updated successfully!' });
+      } else {
+        const res = await fetch('/api/admin/guides', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to add guide.');
+
+        setGuides((prev) => [...prev, data.guide]);
+        setStatusMsg({ type: 'success', text: 'New guide registered successfully!' });
+      }
+      setGuideForm({ name: '', experience: '', description: '', imageUrl: '' });
+      router.refresh();
+    } catch (e) {
+      setStatusMsg({ type: 'error', text: e.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteGuide = async (id) => {
+    if (!confirm('Are you sure you want to remove this guide from the directory?')) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/guides?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete guide.');
+
+      setGuides((prev) => prev.filter((g) => g.id !== id));
+      setStatusMsg({ type: 'success', text: 'Guide removed from directory.' });
+      router.refresh();
+    } catch (e) {
+      setStatusMsg({ type: 'error', text: e.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Lures Edit handlers
+  const handleStartEditLure = (lure) => {
+    setEditingLureId(lure.id);
+    setLureForm({
+      name: lure.name,
+      price: lure.price.toString(),
+      stockQty: lure.stock_qty ? lure.stock_qty.toString() : '20',
+      imageUrl: lure.image_url || '',
+      presetImage: '/assets/logo 1.jpeg'
+    });
+  };
+
+  const handleCancelEditLure = () => {
+    setEditingLureId(null);
+    setLureForm({ name: '', price: '', stockQty: '', imageUrl: '', presetImage: '/assets/logo 1.jpeg' });
+  };
+
+  // Fish Species Edit handlers
+  const handleStartEditFish = (fish) => {
+    setEditingFishId(fish.id);
+    setFishForm({
+      name: fish.name,
+      description: fish.description,
+      imageUrl: fish.image_url || ''
+    });
+  };
+
+  const handleCancelEditFish = () => {
+    setEditingFishId(null);
+    setFishForm({ name: '', description: '', imageUrl: '' });
+  };
+
+  // Damage Policy Edit handlers
+  const handleStartEditPolicy = (policy) => {
+    setEditingPolicyId(policy.id);
+    setDamagePolicyForm({
+      name: policy.name,
+      price: policy.price.toString(),
+      imageUrl: policy.image_url || ''
+    });
+  };
+
+  const handleCancelEditPolicy = () => {
+    setEditingPolicyId(null);
+    setDamagePolicyForm({ name: '', price: '', imageUrl: '' });
+  };
+
+  // Fishing Spot Edit handlers
+  const handleStartEditSpot = (spot, index) => {
+    setEditingSpotIndex(index);
+    setSpotForm({
+      name: spot.name,
+      terrain: spot.terrain || '',
+      coordinates: spot.coordinates || '',
+      description: spot.description,
+      bestTime: spot.bestTime || '',
+      lures: spot.lures || '',
+      difficulty: spot.difficulty || 'Beginner',
+      image: spot.image || ''
+    });
+  };
+
+  const handleCancelEditSpot = () => {
+    setEditingSpotIndex(null);
+    setSpotForm({ name: '', terrain: '', coordinates: '', description: '', bestTime: '', lures: '', difficulty: 'Beginner', image: '' });
+  };
+
   return (
     <div className="flex flex-col lg:flex-row w-full min-h-screen items-stretch relative overflow-x-hidden">
       
@@ -953,6 +1136,7 @@ export default function AdminDashboard({ session, initialData }) {
           { id: 'damagePolicies', label: 'Damage Gear Policies', icon: <AlertTriangle className="w-5 h-5" /> },
           { id: 'damages', label: 'Damage Reports', icon: <AlertTriangle className="w-5 h-5" /> },
           { id: 'guides', label: 'Guide Schedule', icon: <Calendar className="w-5 h-5" /> },
+          { id: 'guidesManagement', label: 'Guides Directory', icon: <User className="w-5 h-5" /> },
           { id: 'fishSpeciesTab', label: 'Fish Directory', icon: <Fish className="w-5 h-5" /> },
           { id: 'fishingSpotsTab', label: 'Spot Directory', icon: <MapPin className="w-5 h-5" /> },
           { id: 'restaurantsTab', label: 'Dining Partners', icon: <Anchor className="w-5 h-5" /> },
@@ -1159,7 +1343,7 @@ export default function AdminDashboard({ session, initialData }) {
                 {/* Form Column - Left */}
                 <form onSubmit={handleAddLure} className="lg:col-span-5 p-6 rounded-xl border border-[#00B5AD]/25 bg-[#0A424A]/5 space-y-4">
                   <h4 className="text-sm font-extrabold uppercase tracking-wide font-['Outfit'] text-[#002830]">
-                    Register New Island Lure
+                    {editingLureId ? `Edit Lure: ${lureForm.name}` : 'Register New Island Lure'}
                   </h4>
 
                   {/* Lure Name */}
@@ -1243,15 +1427,26 @@ export default function AdminDashboard({ session, initialData }) {
                     </div>
                   </div>
 
-                  {/* Submit Button */}
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full flex items-center justify-center gap-2 bg-[#00B5AD] hover:bg-[#00A39E] text-white py-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-[0_4px_10px_rgba(0,181,173,0.15)]"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Register Add-on Lure
-                  </button>
+                  {/* Form Submission Buttons */}
+                  <div className="flex items-center gap-2 pt-2">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex-1 flex items-center justify-center gap-2 bg-[#00B5AD] hover:bg-[#00A39E] text-white py-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-[0_4px_10px_rgba(0,181,173,0.15)]"
+                    >
+                      {editingLureId ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                      {editingLureId ? 'Save Lure Changes' : 'Register Add-on Lure'}
+                    </button>
+                    {editingLureId && (
+                      <button
+                        type="button"
+                        onClick={handleCancelEditLure}
+                        className="bg-gray-500/10 border border-gray-500/20 text-gray-700 hover:bg-gray-500 hover:text-white px-4 py-3 rounded-lg text-xs font-black uppercase transition-all cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
                 </form>
 
                 {/* Catalog Grid Column - Right */}
@@ -1263,15 +1458,26 @@ export default function AdminDashboard({ session, initialData }) {
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {lures.map((lure) => (
                       <div key={lure.id} className="p-4 rounded-xl border border-[#00B5AD]/20 bg-white flex flex-col justify-between shadow-sm relative group overflow-hidden">
-                        {/* Delete absolute button */}
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteLure(lure.id)}
-                          className="absolute top-2 right-2 p-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 cursor-pointer z-10"
-                          title="Remove Lure"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        
+                        {/* Actions overlay buttons */}
+                        <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all z-10">
+                          <button
+                            type="button; cursor-pointer"
+                            onClick={() => handleStartEditLure(lure)}
+                            className="p-1.5 rounded-full bg-[#00B5AD]/10 border border-[#00B5AD]/20 text-[#00B5AD] hover:bg-[#00B5AD] hover:text-white transition-all cursor-pointer"
+                            title="Edit Lure"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteLure(lure.id)}
+                            className="p-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all cursor-pointer"
+                            title="Remove Lure"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
 
                         <div className="space-y-3">
                           {/* Image Box */}
@@ -1316,7 +1522,7 @@ export default function AdminDashboard({ session, initialData }) {
                 <div className="lg:col-span-5 flex flex-col space-y-8">
                   <form onSubmit={handleAddDamagePolicy} className="p-6 rounded-xl border border-[#00B5AD]/25 bg-[#0A424A]/5 space-y-4">
                   <h4 className="text-sm font-extrabold uppercase tracking-wide font-['Outfit'] text-[#002830]">
-                    Register New Damage Gear Item
+                    {editingPolicyId ? `Edit Policy: ${damagePolicyForm.name}` : 'Register New Damage Gear Item'}
                   </h4>
 
                   {/* Policy Name */}
@@ -1376,15 +1582,26 @@ export default function AdminDashboard({ session, initialData }) {
                     </div>
                   </div>
 
-                  {/* Submit Button */}
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full flex items-center justify-center gap-2 bg-[#00B5AD] hover:bg-[#00A39E] text-white py-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-[0_4px_10px_rgba(0,181,173,0.15)]"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Register Damage Policy
-                  </button>
+                  {/* Form Submission Buttons */}
+                  <div className="flex items-center gap-2 pt-2">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex-1 flex items-center justify-center gap-2 bg-[#00B5AD] hover:bg-[#00A39E] text-white py-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-[0_4px_10px_rgba(0,181,173,0.15)]"
+                    >
+                      {editingPolicyId ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                      {editingPolicyId ? 'Save Policy Changes' : 'Register Damage Policy'}
+                    </button>
+                    {editingPolicyId && (
+                      <button
+                        type="button"
+                        onClick={handleCancelEditPolicy}
+                        className="bg-gray-500/10 border border-gray-500/20 text-gray-700 hover:bg-gray-500 hover:text-white px-4 py-3 rounded-lg text-xs font-black uppercase transition-all cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
                 </form>
 
                 {/* --- SEPARATE SECTION: GENERAL BROKEN IMAGES --- */}
@@ -1436,15 +1653,25 @@ export default function AdminDashboard({ session, initialData }) {
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {damagePolicies.map((p) => (
                       <div key={p.id} className="p-4 rounded-xl border border-[#00B5AD]/20 bg-white flex flex-col justify-between shadow-sm relative group overflow-hidden">
-                        {/* Delete absolute button */}
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteDamagePolicy(p.id)}
-                          className="absolute top-2 right-2 p-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 cursor-pointer z-10"
-                          title="Remove Damage Policy"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {/* Actions overlay buttons */}
+                        <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all z-10">
+                          <button
+                            type="button"
+                            onClick={() => handleStartEditPolicy(p)}
+                            className="p-1.5 rounded-full bg-[#00B5AD]/10 border border-[#00B5AD]/20 text-[#00B5AD] hover:bg-[#00B5AD] hover:text-white transition-all cursor-pointer"
+                            title="Edit Policy"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteDamagePolicy(p.id)}
+                            className="p-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all cursor-pointer"
+                            title="Remove Damage Policy"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
 
                         <div className="space-y-3">
                           {/* Image Box */}
@@ -1765,6 +1992,183 @@ export default function AdminDashboard({ session, initialData }) {
             </div>
           )}
 
+          {/* VIEW: GUIDES MANAGEMENT (CRUD) */}
+          {activeTab === 'guidesManagement' && (
+            <div className="space-y-8 text-[#002830]">
+              <h3 className="text-xl font-bold uppercase tracking-wider font-['Outfit'] border-b border-[#00B5AD]/20 pb-2.5 text-[#002830]">
+                Guides Directory Manager
+              </h3>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                {/* Form Column - Left */}
+                <form onSubmit={handleAddGuide} className="lg:col-span-5 p-6 rounded-xl border border-[#00B5AD]/25 bg-[#0A424A]/5 space-y-4">
+                  <h4 className="text-sm font-extrabold uppercase tracking-wide font-['Outfit'] text-[#002830]">
+                    {editingGuideId ? `Edit Guide: ${guideForm.name}` : 'Register New Fishing Guide'}
+                  </h4>
+
+                  {/* Guide Name */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-[#6B7A82] uppercase tracking-wider block">Guide Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={guideForm.name}
+                      onChange={(e) => setGuideForm(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="e.g. Capt. Dan"
+                      className="w-full bg-white border border-[#00B5AD]/30 rounded-lg p-2.5 text-xs text-[#002830] placeholder-[#6B7A82]/50 outline-none focus:border-[#00B5AD] transition-colors"
+                    />
+                  </div>
+
+                  {/* Experience Badge */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-[#6B7A82] uppercase tracking-wider block">Years / Type Experience Badge</label>
+                    <input
+                      type="text"
+                      value={guideForm.experience}
+                      onChange={(e) => setGuideForm(prev => ({ ...prev, experience: e.target.value }))}
+                      placeholder="e.g. 15+ Yrs Exp"
+                      className="w-full bg-white border border-[#00B5AD]/30 rounded-lg p-2.5 text-xs text-[#002830] placeholder-[#6B7A82]/50 outline-none focus:border-[#00B5AD] transition-colors"
+                    />
+                  </div>
+
+                  {/* Description / Bio */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-[#6B7A82] uppercase tracking-wider block">Short Description / Bio Tagline</label>
+                    <textarea
+                      value={guideForm.description}
+                      onChange={(e) => setGuideForm(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Describe guide specialty, certifications..."
+                      rows="3"
+                      className="w-full bg-white border border-[#00B5AD]/30 rounded-lg p-2.5 text-xs text-[#002830] placeholder-[#6B7A82]/50 outline-none focus:border-[#00B5AD] transition-colors resize-none"
+                    />
+                  </div>
+
+                  {/* Upload Avatar */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-[#6B7A82] uppercase tracking-wider block">Upload Guide Avatar Image</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleGuideImageChange}
+                      className="w-full bg-white border border-[#00B5AD]/30 rounded-lg p-2 text-xs text-[#002830] file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-[#00B5AD]/15 file:text-[#00B5AD] file:cursor-pointer hover:file:bg-[#00B5AD]/25"
+                    />
+                  </div>
+
+                  {/* Paste Avatar URL Fallback */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-[#6B7A82] uppercase tracking-wider block">Or Paste Image URL</label>
+                    <input
+                      type="text"
+                      value={guideForm.imageUrl}
+                      onChange={(e) => setGuideForm(prev => ({ ...prev, imageUrl: e.target.value }))}
+                      placeholder="e.g. /assets/logo 1.jpeg"
+                      className="w-full bg-white border border-[#00B5AD]/30 rounded-lg p-2.5 text-xs text-[#002830] placeholder-[#6B7A82]/50 outline-none focus:border-[#00B5AD] transition-colors"
+                    />
+                  </div>
+
+                  {/* Live Preview Avatar */}
+                  <div className="flex items-center gap-3 pt-2">
+                    <div className="w-14 h-14 rounded-full overflow-hidden border border-[#00B5AD]/20 bg-white flex items-center justify-center flex-shrink-0">
+                      {guideForm.imageUrl ? (
+                        <img
+                          src={guideForm.imageUrl}
+                          alt="Guide Avatar Preview"
+                          className="w-full h-full object-cover"
+                          onError={(e) => { e.target.src = '/assets/logo 1.jpeg'; }}
+                        />
+                      ) : (
+                        <User className="w-6 h-6 text-[#00B5AD]" />
+                      )}
+                    </div>
+                    <div>
+                      <span className="block text-[9px] font-black text-[#6B7A82] uppercase">Avatar Live Preview</span>
+                      <span className="block text-[10px] font-bold text-[#00B5AD]">Will display in booking dropdowns</span>
+                    </div>
+                  </div>
+
+                  {/* Form Submission Buttons */}
+                  <div className="flex items-center gap-2 pt-2">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex-1 flex items-center justify-center gap-2 bg-[#00B5AD] hover:bg-[#00A39E] text-white py-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-[0_4px_10px_rgba(0,181,173,0.15)]"
+                    >
+                      {editingGuideId ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                      {editingGuideId ? 'Save Guide Changes' : 'Register Guide'}
+                    </button>
+                    {editingGuideId && (
+                      <button
+                        type="button"
+                        onClick={handleCancelEditGuide}
+                        className="bg-gray-500/10 border border-gray-500/20 text-gray-700 hover:bg-gray-500 hover:text-white px-4 py-3 rounded-lg text-xs font-black uppercase transition-all cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </form>
+
+                {/* Catalog Grid Column - Right */}
+                <div className="lg:col-span-7 space-y-4">
+                  <h4 className="text-sm font-extrabold uppercase tracking-wide font-['Outfit'] text-[#002830]">
+                    Current Guides Directory ({guides.length})
+                  </h4>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {guides.map((guide) => (
+                      <div key={guide.id} className="p-4 rounded-xl border border-[#00B5AD]/20 bg-white flex flex-col justify-between shadow-sm relative group overflow-hidden">
+                        
+                        {/* Hover Actions Menu */}
+                        <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all z-10">
+                          <button
+                            type="button"
+                            onClick={() => handleStartEditGuide(guide)}
+                            className="p-1.5 rounded-full bg-[#00B5AD]/10 border border-[#00B5AD]/20 text-[#00B5AD] hover:bg-[#00B5AD] hover:text-white transition-all cursor-pointer"
+                            title="Edit Guide"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteGuide(guide.id)}
+                            className="p-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all cursor-pointer"
+                            title="Remove Guide"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        <div className="space-y-3 flex flex-col items-center text-center">
+                          {/* Circle Avatar Box */}
+                          <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-[#00B5AD]/20 bg-white flex items-center justify-center flex-shrink-0 shadow-inner">
+                            <img
+                              src={guide.image_url || '/assets/logo 1.jpeg'}
+                              alt={guide.name}
+                              className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                              onError={(e) => { e.target.src = '/assets/logo 1.jpeg'; }}
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <span className="block text-[8px] font-black text-[#00B5AD] bg-[#00B5AD]/10 px-2 py-0.5 rounded-full uppercase tracking-wider inline-block">
+                              {guide.experience || 'Charter Pro'}
+                            </span>
+                            <h5 className="text-xs font-black text-[#002830] font-['Outfit']">{guide.name}</h5>
+                            <p className="text-[10px] text-[#6B7A82] line-clamp-2 leading-relaxed">{guide.description || 'St. Thomas Angling Expert'}</p>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 pt-2 border-t border-[#00B5AD]/10 text-center">
+                          <span className="text-[8px] font-black text-gray-400 uppercase">Guide ID #{guide.id}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* VIEW 6: FEEDBACK MESSAGES */}
           {activeTab === 'messages' && (
             <div className="space-y-6 text-[#002830]">
@@ -1811,7 +2215,7 @@ export default function AdminDashboard({ session, initialData }) {
                 {/* Form Column - Left */}
                 <form onSubmit={handleAddFish} className="lg:col-span-5 p-6 rounded-xl border border-[#00B5AD]/25 bg-[#0A424A]/5 space-y-4">
                   <h4 className="text-sm font-extrabold uppercase tracking-wide font-['Outfit'] text-[#002830]">
-                    Register New Game Fish
+                    {editingFishId ? `Edit Fish: ${fishForm.name}` : 'Register New Game Fish'}
                   </h4>
 
                   {/* Fish Name */}
@@ -1883,15 +2287,26 @@ export default function AdminDashboard({ session, initialData }) {
                     </div>
                   </div>
 
-                  {/* Submit Button */}
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full flex items-center justify-center gap-2 bg-[#00B5AD] hover:bg-[#00A39E] text-white py-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-[0_4px_10px_rgba(0,181,173,0.15)]"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Register Game Fish
-                  </button>
+                  {/* Form Submission Buttons */}
+                  <div className="flex items-center gap-2 pt-2">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex-1 flex items-center justify-center gap-2 bg-[#00B5AD] hover:bg-[#00A39E] text-white py-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-[0_4px_10px_rgba(0,181,173,0.15)]"
+                    >
+                      {editingFishId ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                      {editingFishId ? 'Save Fish Changes' : 'Register Game Fish'}
+                    </button>
+                    {editingFishId && (
+                      <button
+                        type="button"
+                        onClick={handleCancelEditFish}
+                        className="bg-gray-500/10 border border-gray-500/20 text-gray-700 hover:bg-gray-500 hover:text-white px-4 py-3 rounded-lg text-xs font-black uppercase transition-all cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
                 </form>
 
                 {/* Catalog Grid Column - Right */}
@@ -1903,15 +2318,26 @@ export default function AdminDashboard({ session, initialData }) {
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {fishSpecies.map((fish) => (
                       <div key={fish.id} className="p-4 rounded-xl border border-[#00B5AD]/20 bg-white flex flex-col justify-between shadow-sm relative group overflow-hidden">
-                        {/* Delete absolute button */}
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteFish(fish.id)}
-                          className="absolute top-2 right-2 p-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 cursor-pointer z-10"
-                          title="Remove Fish Species"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        
+                        {/* Actions overlay buttons */}
+                        <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all z-10">
+                          <button
+                            type="button"
+                            onClick={() => handleStartEditFish(fish)}
+                            className="p-1.5 rounded-full bg-[#00B5AD]/10 border border-[#00B5AD]/20 text-[#00B5AD] hover:bg-[#00B5AD] hover:text-white transition-all cursor-pointer"
+                            title="Edit Fish"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteFish(fish.id)}
+                            className="p-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all cursor-pointer"
+                            title="Remove Fish Species"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
 
                         <div className="space-y-3">
                           {/* Image Box */}
@@ -1958,7 +2384,7 @@ export default function AdminDashboard({ session, initialData }) {
                 {/* Form Column - Left */}
                 <form onSubmit={handleAddSpot} className="lg:col-span-5 p-6 rounded-xl border border-[#00B5AD]/25 bg-[#0A424A]/5 space-y-4">
                   <h4 className="text-sm font-extrabold uppercase tracking-wide font-['Outfit'] text-[#002830]">
-                    Register New Fishing Hotspot
+                    {editingSpotIndex !== null ? `Edit Spot: ${spotForm.name}` : 'Register New Fishing Hotspot'}
                   </h4>
 
                   {/* Spot Name */}
@@ -2081,15 +2507,26 @@ export default function AdminDashboard({ session, initialData }) {
                     </div>
                   </div>
 
-                  {/* Submit Button */}
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full flex items-center justify-center gap-2 bg-[#00B5AD] hover:bg-[#00A39E] text-white py-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-[0_4px_10px_rgba(0,181,173,0.15)]"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Register Fishing Spot
-                  </button>
+                  {/* Form Submission Buttons */}
+                  <div className="flex items-center gap-2 pt-2">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex-1 flex items-center justify-center gap-2 bg-[#00B5AD] hover:bg-[#00A39E] text-white py-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-[0_4px_10px_rgba(0,181,173,0.15)]"
+                    >
+                      {editingSpotIndex !== null ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                      {editingSpotIndex !== null ? 'Save Spot Changes' : 'Register Fishing Spot'}
+                    </button>
+                    {editingSpotIndex !== null && (
+                      <button
+                        type="button"
+                        onClick={handleCancelEditSpot}
+                        className="bg-gray-500/10 border border-gray-500/20 text-gray-700 hover:bg-gray-500 hover:text-white px-4 py-3 rounded-lg text-xs font-black uppercase transition-all cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
                 </form>
 
                 {/* Spots Catalog Column - Right */}
@@ -2123,15 +2560,25 @@ export default function AdminDashboard({ session, initialData }) {
                                 </div>
                               )}
                             </div>
-                            {/* Delete button */}
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteSpot(idx)}
-                              className="p-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 cursor-pointer flex-shrink-0"
-                              title="Remove Fishing Spot"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {/* Actions overlay buttons */}
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => handleStartEditSpot(spot, idx)}
+                                className="p-1.5 rounded-full bg-[#00B5AD]/10 border border-[#00B5AD]/20 text-[#00B5AD] hover:bg-[#00B5AD] hover:text-white transition-all cursor-pointer"
+                                title="Edit Spot"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteSpot(idx)}
+                                className="p-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all cursor-pointer"
+                                title="Remove Fishing Spot"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
 
                           <p className="text-[10px] text-[#6B7A82] leading-relaxed line-clamp-2">{spot.description}</p>
@@ -2234,6 +2681,66 @@ export default function AdminDashboard({ session, initialData }) {
                     rows="2"
                     className="w-full bg-white border border-[#00B5AD]/30 text-[#002830] rounded-lg px-3 py-2.5 outline-none resize-none"
                   />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-[#6B7A82] uppercase text-[10px]">Slide {currentSlideTab + 1} Background Image {uploadingImage && '(Uploading...)'}</label>
+                  {cmsForm.slides[currentSlideTab]?.image && (
+                    <div className="mb-2 flex items-center gap-2">
+                      <img
+                        src={cmsForm.slides[currentSlideTab]?.image}
+                        alt={`Slide ${currentSlideTab + 1}`}
+                        className="h-16 w-32 object-cover rounded-lg border border-[#00B5AD]/30 bg-black/20"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newSlides = [...cmsForm.slides];
+                          newSlides[currentSlideTab] = { ...newSlides[currentSlideTab], image: '' };
+                          setCmsForm(prev => ({ ...prev, slides: newSlides }));
+                        }}
+                        className="text-xs text-red-500 font-extrabold hover:underline cursor-pointer"
+                      >
+                        Remove Image
+                      </button>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      setUploadingImage(true);
+                      setStatusMsg({ type: null, text: '' });
+                      try {
+                        const compressedBase64 = await compressImage(file, 1200, 0.75, true);
+                        const newSlides = [...cmsForm.slides];
+                        newSlides[currentSlideTab] = { ...newSlides[currentSlideTab], image: compressedBase64 };
+                        setCmsForm(prev => ({ ...prev, slides: newSlides }));
+                        setStatusMsg({ type: 'success', text: 'Slide background image set. Click Save to apply changes.' });
+                      } catch (err) {
+                        setStatusMsg({ type: 'error', text: err.message });
+                      } finally {
+                        setUploadingImage(false);
+                      }
+                    }}
+                    className="w-full bg-white border border-[#00B5AD]/30 text-[#002830] rounded-lg px-3 py-2.5 outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-[#00B5AD]/10 file:text-[#00B5AD] hover:file:bg-[#00B5AD]/20"
+                  />
+                  <div className="mt-1">
+                    <span className="text-[10px] text-[#6B7A82]/70 font-semibold block">Or paste raw Image URL / Base64 string:</span>
+                    <input
+                      type="text"
+                      placeholder="e.g. https://example.com/hero.jpg"
+                      value={cmsForm.slides[currentSlideTab]?.image || ''}
+                      onChange={(e) => {
+                        const newSlides = [...cmsForm.slides];
+                        newSlides[currentSlideTab] = { ...newSlides[currentSlideTab], image: e.target.value };
+                        setCmsForm(prev => ({ ...prev, slides: newSlides }));
+                      }}
+                      className="w-full bg-white border border-[#00B5AD]/30 text-[#002830] rounded-lg px-3 py-2.5 outline-none text-xs mt-1"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">

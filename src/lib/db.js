@@ -153,6 +153,11 @@ const INITIAL_MOCK_DATA = {
     { id: 4, name: 'Broken Tacklebox shell', price: 25.00, image_url: '', broken_images: [] },
     { id: 5, name: 'Lost rigging Pliers', price: 10.00, image_url: '', broken_images: [] },
     { id: 6, name: 'Late Return (Over 1 Hour past window)', price: 100.00, image_url: '', broken_images: [] }
+  ],
+  guides: [
+    { id: 1, name: 'Capt. Dan', experience: '15+ Yrs Exp', description: 'Shore Cast Master', image_url: '/assets/logo 1.jpeg' },
+    { id: 2, name: 'Sarah', experience: '8+ Yrs Exp', description: 'Fly & Wading Pro', image_url: '/assets/logo 1.jpeg' },
+    { id: 3, name: 'Marcus', experience: '10+ Yrs Exp', description: 'Tarpon Secret Spots', image_url: '/assets/logo 1.jpeg' }
   ]
 };
 
@@ -164,7 +169,24 @@ function getMockDB() {
   }
   try {
     const data = fs.readFileSync(MOCK_DB_PATH, 'utf-8');
-    return JSON.parse(data);
+    const db = JSON.parse(data);
+    let dirty = false;
+    if (!db.guides) {
+      db.guides = INITIAL_MOCK_DATA.guides;
+      dirty = true;
+    }
+    if (!db.damage_policies) {
+      db.damage_policies = INITIAL_MOCK_DATA.damage_policies;
+      dirty = true;
+    }
+    if (!db.fish_species) {
+      db.fish_species = INITIAL_MOCK_DATA.fish_species;
+      dirty = true;
+    }
+    if (dirty) {
+      saveMockDB(db);
+    }
+    return db;
   } catch (e) {
     console.error('Error reading mock DB file, resetting to defaults.', e);
     return INITIAL_MOCK_DATA;
@@ -382,13 +404,27 @@ function handleMockQuery(text, params = []) {
     return { rows: [], rowCount: 1 };
   }
 
-  // 11. UPDATE lures
+  // 11. UPDATE lures (simple)
   if (sql.includes('UPDATE lures SET price = $1, stock_qty = $2 WHERE id = $3')) {
     const [price, stock_qty, id] = params;
     const lure = db.lures.find(l => l.id === parseInt(id));
     if (lure) {
       lure.price = parseFloat(price);
       lure.stock_qty = parseInt(stock_qty);
+      saveMockDB(db);
+    }
+    return { rows: lure ? [lure] : [], rowCount: lure ? 1 : 0 };
+  }
+
+  // 11b. UPDATE lures (full)
+  if (sql.includes('UPDATE lures SET name = $1, price = $2, stock_qty = $3, image_url = $4 WHERE id = $5')) {
+    const [name, price, stock_qty, image_url, id] = params;
+    const lure = db.lures.find(l => l.id === parseInt(id));
+    if (lure) {
+      lure.name = name;
+      lure.price = parseFloat(price);
+      lure.stock_qty = parseInt(stock_qty);
+      lure.image_url = image_url || '/assets/logo 1.jpeg';
       saveMockDB(db);
     }
     return { rows: lure ? [lure] : [], rowCount: lure ? 1 : 0 };
@@ -470,6 +506,19 @@ function handleMockQuery(text, params = []) {
     db.fish_species = db.fish_species.filter(f => f.id !== id);
     saveMockDB(db);
     return { rows: [], rowCount: 1 };
+  }
+
+  // UPDATE fish_species
+  if (sql.includes('UPDATE fish_species SET name = $1, description = $2, image_url = $3 WHERE id = $4')) {
+    const [name, description, image_url, id] = params;
+    const fish = db.fish_species.find(f => f.id === parseInt(id));
+    if (fish) {
+      fish.name = name;
+      fish.description = description;
+      fish.image_url = image_url || '/assets/logo 1.jpeg';
+      saveMockDB(db);
+    }
+    return { rows: fish ? [fish] : [], rowCount: fish ? 1 : 0 };
   }
 
   // 15. SELECT * FROM restaurants
@@ -572,6 +621,66 @@ function handleMockQuery(text, params = []) {
     const id = parseInt(params[0]);
     if (db.damage_policies) {
       db.damage_policies = db.damage_policies.filter(p => p.id !== id);
+    }
+    saveMockDB(db);
+    return { rows: [], rowCount: 1 };
+  }
+
+  // UPDATE damage_policies
+  if (sql.includes('UPDATE damage_policies SET name = $1, price = $2, image_url = $3 WHERE id = $4')) {
+    const [name, price, image_url, id] = params;
+    const policy = db.damage_policies.find(p => p.id === parseInt(id));
+    if (policy) {
+      policy.name = name;
+      policy.price = parseFloat(price);
+      policy.image_url = image_url || '';
+      saveMockDB(db);
+    }
+    return { rows: policy ? [policy] : [], rowCount: policy ? 1 : 0 };
+  }
+
+  // SELECT * FROM guides
+  if (sql.includes('SELECT * FROM guides')) {
+    return { rows: db.guides || [], rowCount: (db.guides || []).length };
+  }
+
+  // INSERT INTO guides
+  if (sql.includes('INSERT INTO guides')) {
+    const [name, experience, description, image_url] = params;
+    const newGuide = {
+      id: db.guides && db.guides.length > 0
+        ? Math.max(...db.guides.map(g => g.id)) + 1
+        : 1,
+      name,
+      experience,
+      description,
+      image_url: image_url || '/assets/logo 1.jpeg'
+    };
+    if (!db.guides) db.guides = [];
+    db.guides.push(newGuide);
+    saveMockDB(db);
+    return { rows: [newGuide], rowCount: 1 };
+  }
+
+  // UPDATE guides
+  if (sql.includes('UPDATE guides SET name = $1, experience = $2, description = $3, image_url = $4 WHERE id = $5')) {
+    const [name, experience, description, image_url, id] = params;
+    const guide = db.guides.find(g => g.id === parseInt(id));
+    if (guide) {
+      guide.name = name;
+      guide.experience = experience;
+      guide.description = description;
+      guide.image_url = image_url || '/assets/logo 1.jpeg';
+      saveMockDB(db);
+    }
+    return { rows: guide ? [guide] : [], rowCount: guide ? 1 : 0 };
+  }
+
+  // DELETE FROM guides
+  if (sql.includes('DELETE FROM guides WHERE id = $1')) {
+    const id = parseInt(params[0]);
+    if (db.guides) {
+      db.guides = db.guides.filter(g => g.id !== id);
     }
     saveMockDB(db);
     return { rows: [], rowCount: 1 };

@@ -153,6 +153,18 @@ export async function initDatabase() {
       );
     `);
 
+    // 13. Create Guides table
+    await query(`
+      CREATE TABLE IF NOT EXISTS guides (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        experience VARCHAR(100),
+        description TEXT,
+        image_url TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     // --- SEEDING DATA ---
 
     // Seed Admin User
@@ -383,6 +395,25 @@ export async function initDatabase() {
         ]);
       }
       console.log('Seeded default Damage Policies into catalog');
+    }
+
+    // Seed Guides
+    const guidesCount = await query("SELECT COUNT(*) FROM guides;");
+    if (parseInt(guidesCount.rows[0].count) === 0) {
+      const defaultGuides = [
+        { name: 'Capt. Dan', experience: '15+ Yrs Exp', description: 'Shore Cast Master', image: '/assets/logo 1.jpeg' },
+        { name: 'Sarah', experience: '8+ Yrs Exp', description: 'Fly & Wading Pro', image: '/assets/logo 1.jpeg' },
+        { name: 'Marcus', experience: '10+ Yrs Exp', description: 'Tarpon Secret Spots', image: '/assets/logo 1.jpeg' }
+      ];
+      for (const guide of defaultGuides) {
+        await query(`INSERT INTO guides (name, experience, description, image_url) VALUES ($1, $2, $3, $4);`, [
+          guide.name,
+          guide.experience,
+          guide.description,
+          guide.image
+        ]);
+      }
+      console.log('Seeded default Guides into directory');
     }
 
     console.log('Database self-healing verification completed successfully.');

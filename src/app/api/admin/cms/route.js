@@ -18,7 +18,8 @@ export async function POST(request) {
       hero: slides.map(s => ({
         title: s.title || '',
         subtitle: s.subtitle || '',
-        description: s.description || ''
+        description: s.description || '',
+        image: s.image || ''
       })),
       whyChooseUs: {
         text: whyChooseUs || ''

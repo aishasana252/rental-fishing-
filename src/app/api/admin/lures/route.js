@@ -60,3 +60,35 @@ export async function DELETE(req) {
     );
   }
 }
+
+export async function PUT(req) {
+  try {
+    const session = await getSession();
+    if (!session || session.role !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id, name, price, image_url, stock_qty } = await req.json();
+
+    if (!id || !name || price === undefined) {
+      return NextResponse.json({ error: 'ID, Name and Price are required' }, { status: 400 });
+    }
+
+    const res = await query(
+      'UPDATE lures SET name = $1, price = $2, stock_qty = $3, image_url = $4 WHERE id = $5 RETURNING *',
+      [name, parseFloat(price), parseInt(stock_qty) || 20, image_url || '/assets/logo 1.jpeg', parseInt(id)]
+    );
+
+    if (res.rows.length === 0) {
+      return NextResponse.json({ error: 'Lure not found or update failed' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, lure: res.rows[0] });
+  } catch (error) {
+    console.error('API update lure error:', error);
+    return NextResponse.json(
+      { error: error.message || 'An unexpected error occurred' },
+      { status: 500 }
+    );
+  }
+}

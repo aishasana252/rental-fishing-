@@ -73,6 +73,10 @@ async function fetchDashboardData() {
     const policiesRes = await query('SELECT * FROM damage_policies ORDER BY id ASC;');
     const damagePolicies = policiesRes.rows;
 
+    // 11. Fetch guides
+    const guidesRes = await query('SELECT * FROM guides ORDER BY id ASC;');
+    const guides = guidesRes.rows;
+
     return {
       bookings: bookingsFull,
       inventory,
@@ -83,7 +87,8 @@ async function fetchDashboardData() {
       cms,
       fishSpecies,
       restaurants,
-      damagePolicies
+      damagePolicies,
+      guides
     };
   } catch (error) {
     console.error('Critical Admin dashboard query failed:', error);
@@ -97,7 +102,8 @@ async function fetchDashboardData() {
       cms: [],
       fishSpecies: [],
       restaurants: [],
-      damagePolicies: []
+      damagePolicies: [],
+      guides: []
     };
   }
 }
