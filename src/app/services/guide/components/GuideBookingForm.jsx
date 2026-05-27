@@ -7,6 +7,8 @@ export default function GuideBookingForm({ session }) {
   const [formData, setFormData] = useState({
     date: '',
     hours: '2',
+    guideName: 'First Available (Assign Best Expert)',
+    startTime: '08:00 AM',
     pickupLocation: '',
     cardName: '',
     cardNumber: '',
@@ -21,7 +23,14 @@ export default function GuideBookingForm({ session }) {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const pricePerHour = 100;
+  // Enforce blackout dates by setting the minimum date to exactly 3 days in the future
+  const getThreeDaysOutDate = () => {
+    const today = new Date();
+    today.setDate(today.getDate() + 3);
+    return today.toISOString().split('T')[0];
+  };
+
+  const pricePerHour = 75; // Updated rate as requested
   const totalPrice = parseInt(formData.hours) * pricePerHour;
 
   const handleSubmit = async (e) => {
@@ -49,7 +58,8 @@ export default function GuideBookingForm({ session }) {
         guide_booked: true,
         guide_hours: parseInt(formData.hours),
         guide_date: formData.date,
-        guide_pickup_location: formData.pickupLocation,
+        // Combined guide details in the location field for perfect backwards-compatibility
+        guide_pickup_location: `Guide: ${formData.guideName} | Time: ${formData.startTime} | Pickup: ${formData.pickupLocation}`,
         damage_agreement: true, // Auto-agree for guides
         total_price: totalPrice,
         payment_status: 'paid', // Auto paid on checkout
@@ -98,12 +108,56 @@ export default function GuideBookingForm({ session }) {
         </div>
       )}
 
+      {/* Choose Guide & Excursion Start Time Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider flex items-center gap-1">
+            <User className="w-3.5 h-3.5 text-[#00B5AD]" />
+            Choose Your Guide
+          </label>
+          <select
+            name="guideName"
+            value={formData.guideName}
+            onChange={handleChange}
+            className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] outline-none"
+          >
+            <option value="First Available (Assign Best Expert)">First Available (Assign Best Expert)</option>
+            <option value="Capt. Dan (Shore Cast Master - 15+ Yrs Exp)">Capt. Dan (Shore Cast Master)</option>
+            <option value="Sarah (Fly & Wading Pro - 8+ Yrs Exp)">Sarah (Fly & Wading Pro)</option>
+            <option value="Marcus (Tarpon Secret Spots - 10+ Yrs Exp)">Marcus (Tarpon Secret Spots)</option>
+          </select>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider flex items-center gap-1">
+            <Clock className="w-3.5 h-3.5 text-[#00B5AD]" />
+            Select Start Time
+          </label>
+          <select
+            name="startTime"
+            value={formData.startTime}
+            onChange={handleChange}
+            className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] outline-none"
+          >
+            <option value="06:00 AM">06:00 AM (Early Cast)</option>
+            <option value="07:00 AM">07:00 AM</option>
+            <option value="08:00 AM">08:00 AM</option>
+            <option value="09:00 AM">09:00 AM</option>
+            <option value="10:00 AM">10:00 AM</option>
+            <option value="12:00 PM">12:00 PM</option>
+            <option value="01:00 PM">01:00 PM</option>
+            <option value="02:00 PM">02:00 PM</option>
+            <option value="03:00 PM">03:00 PM (Sunset Cast)</option>
+          </select>
+        </div>
+      </div>
+
       {/* Date & Hours Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider flex items-center gap-1">
             <Calendar className="w-3.5 h-3.5 text-[#00B5AD]" />
-            Charter Date
+            Charter Date (Min 3-Days Advance Notice)
           </label>
           <input
             type="date"
@@ -111,7 +165,7 @@ export default function GuideBookingForm({ session }) {
             required
             value={formData.date}
             onChange={handleChange}
-            min={new Date().toISOString().split('T')[0]}
+            min={getThreeDaysOutDate()}
             className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] outline-none"
           />
         </div>
@@ -119,7 +173,7 @@ export default function GuideBookingForm({ session }) {
         <div className="space-y-1.5">
           <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider flex items-center gap-1">
             <Clock className="w-3.5 h-3.5 text-[#00B5AD]" />
-            Duration (Hours)
+            Duration (Hours - $75/Hr)
           </label>
           <select
             name="hours"
@@ -127,11 +181,18 @@ export default function GuideBookingForm({ session }) {
             onChange={handleChange}
             className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] outline-none"
           >
+            <option value="1">1 Hour Excursion</option>
             <option value="2">2 Hours Excursion</option>
             <option value="3">3 Hours Excursion</option>
             <option value="4">4 Hours Excursion</option>
+            <option value="5">5 Hours Excursion</option>
             <option value="6">6 Hours Excursion (Half Day)</option>
+            <option value="7">7 Hours Excursion</option>
             <option value="8">8 Hours Excursion (Full Day)</option>
+            <option value="9">9 Hours Excursion</option>
+            <option value="10">10 Hours Excursion</option>
+            <option value="11">11 Hours Excursion</option>
+            <option value="12">12 Hours Excursion</option>
           </select>
         </div>
       </div>
@@ -140,7 +201,7 @@ export default function GuideBookingForm({ session }) {
       <div className="space-y-1.5">
         <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider flex items-center gap-1">
           <MapPin className="w-3.5 h-3.5 text-[#00B5AD]" />
-          Pickup Point / Resort Address
+          Resort Pickup & Drop-Off Address (Complimentary)
         </label>
         <input
           type="text"
@@ -151,6 +212,9 @@ export default function GuideBookingForm({ session }) {
           placeholder="e.g. Sapphire Beach Resort Lobby, Coki Beach entrance..."
           className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] placeholder-[#3B4E5A] outline-none"
         />
+        <span className="block text-[10px] text-[#6B7A82] font-semibold">
+          *Roundtrip private transit to St. Thomas hot shorelines is completely free and included!
+        </span>
       </div>
 
       {/* Secure simulated card credentials */}
@@ -208,7 +272,7 @@ export default function GuideBookingForm({ session }) {
       {/* Pricing Summary & Checkout CTA */}
       <div className="border-t border-[#00B5AD]/10 pt-4 flex items-center justify-between gap-4">
         <div>
-          <span className="block text-[10px] font-bold text-[#6B7A82] uppercase tracking-wider">Excursion Total</span>
+          <span className="block text-[10px] font-bold text-[#6B7A82] uppercase tracking-wider">Excursion Total ($75/Hr)</span>
           <span className="text-[#00B5AD] text-2xl font-black font-['Outfit']">${totalPrice}.00</span>
         </div>
 

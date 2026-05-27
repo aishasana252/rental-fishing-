@@ -185,7 +185,7 @@ export default async function HomePage() {
               />
               {/* Badge */}
               <div className="absolute top-4 right-4 bg-[#00B5AD] text-[#FFFFFF] text-xs font-extrabold px-4 py-2 rounded-full shadow-lg z-20">
-                $100 / Hour
+                $75 / Hour
               </div>
             </div>
 

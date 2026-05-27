@@ -19,7 +19,7 @@ export default function ServicesPage() {
       id: 'guide',
       title: 'Guided Shoreline Charters',
       description: 'Maximize your catches with our elite guided experiences. Get picked up directly from your resort, transported to top hidden shoreline spots, and coached by a local USVI shoreline champion.',
-      badge: '$100 / Hour',
+      badge: '$75 / Hour',
       priceText: 'Gear & Transport Included',
       icon: <Compass className="w-6 h-6 text-[#00B5AD]" />,
       image: '/assets/service_guide.png',

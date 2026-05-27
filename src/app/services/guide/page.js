@@ -42,11 +42,11 @@ export default async function GuidePage() {
             <div className="absolute top-0 right-0 w-24 h-24 bg-[#00B5AD]/5 rounded-full pointer-events-none blur-xl" />
             <span className="block text-[10px] font-bold text-[#6B7A82] uppercase tracking-wider">All-Inclusive Rate</span>
             <div className="flex items-baseline gap-1 text-[#00B5AD]">
-              <span className="text-5xl font-black font-['Outfit']">$100</span>
+              <span className="text-5xl font-black font-['Outfit']">$75</span>
               <span className="text-lg font-bold text-[#6B7A82]">/ Hour</span>
             </div>
             <p className="text-xs text-[#A0ACB3] font-semibold leading-relaxed">
-              *Minimum 2-hour bookings required. Full gear, tackle, licenses, and St. Thomas private shoreline transit are 100% covered in the price.
+              *Full gear, tackle, licenses, and St. Thomas private shoreline transit (with complimentary pickup & drop-off) are 100% covered in the price.
             </p>
           </div>
 
