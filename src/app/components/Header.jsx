@@ -84,11 +84,11 @@ export default function Header({ session }) {
               <>
                 {session.role === 'admin' ? (
                   <Link href="/admin/dashboard" className={`${linkClass} flex items-center gap-1`}>
-                    <Shield className="w-4 h-4" /> Admin
+                    <Shield className="w-4 h-4" /> Admin ({session.fullName.split(' ')[0]})
                   </Link>
                 ) : (
                   <Link href="/profile" className={`${linkClass} flex items-center gap-1`}>
-                    <User className="w-4 h-4" /> Account
+                    <User className="w-4 h-4" /> {session.fullName}
                   </Link>
                 )}
                 <button onClick={handleLogout} className={`${linkClass} flex items-center gap-1`}>
@@ -126,11 +126,11 @@ export default function Header({ session }) {
                 <>
                   {session.role === 'admin' ? (
                     <Link href="/admin/dashboard" onClick={() => setIsOpen(false)} className="text-[#00B5AD] font-bold text-sm uppercase tracking-widest">
-                      Admin Dashboard
+                      Admin: {session.fullName.split(' ')[0]}
                     </Link>
                   ) : (
                     <Link href="/profile" onClick={() => setIsOpen(false)} className="text-[#FFFFFF] font-bold text-sm uppercase tracking-widest">
-                      My Account
+                      {session.fullName}
                     </Link>
                   )}
                   <button onClick={() => { setIsOpen(false); handleLogout(); }} className="text-[#FFFFFF] font-bold text-sm uppercase tracking-widest flex items-center gap-2">
