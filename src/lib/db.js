@@ -161,13 +161,22 @@ const INITIAL_MOCK_DATA = {
   ]
 };
 
-// Initialize Mock JSON File if not exists
+let inMemoryMockDB = null;
+
 function getMockDB() {
-  if (!fs.existsSync(MOCK_DB_PATH)) {
-    fs.writeFileSync(MOCK_DB_PATH, JSON.stringify(INITIAL_MOCK_DATA, null, 2), 'utf-8');
-    return INITIAL_MOCK_DATA;
-  }
+  if (inMemoryMockDB) return inMemoryMockDB;
+
   try {
+    if (!fs.existsSync(MOCK_DB_PATH)) {
+      try {
+        fs.writeFileSync(MOCK_DB_PATH, JSON.stringify(INITIAL_MOCK_DATA, null, 2), 'utf-8');
+      } catch (err) {
+        console.warn('Mock DB write-failed (likely read-only server environment). Serving in-memory default.', err.message);
+      }
+      inMemoryMockDB = INITIAL_MOCK_DATA;
+      return INITIAL_MOCK_DATA;
+    }
+
     const data = fs.readFileSync(MOCK_DB_PATH, 'utf-8');
     const db = JSON.parse(data);
     let dirty = false;
@@ -186,15 +195,22 @@ function getMockDB() {
     if (dirty) {
       saveMockDB(db);
     }
+    inMemoryMockDB = db;
     return db;
   } catch (e) {
     console.error('Error reading mock DB file, resetting to defaults.', e);
+    inMemoryMockDB = INITIAL_MOCK_DATA;
     return INITIAL_MOCK_DATA;
   }
 }
 
 function saveMockDB(data) {
-  fs.writeFileSync(MOCK_DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
+  inMemoryMockDB = data;
+  try {
+    fs.writeFileSync(MOCK_DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('Mock DB save-failed (likely read-only server environment). Kept in-memory.', err.message);
+  }
 }
 
 // State variable to track fallback mode
