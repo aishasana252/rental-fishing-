@@ -77,6 +77,17 @@ async function fetchDashboardData() {
     const guidesRes = await query('SELECT * FROM guides ORDER BY id ASC;');
     const guides = guidesRes.rows;
 
+    // 12. Fetch rental gallery images
+    let rentalGallery = [];
+    try {
+      const galleryRes = await query("SELECT content_data FROM site_content WHERE section_key = 'rental_gallery' LIMIT 1;");
+      if (galleryRes.rows.length > 0) {
+        rentalGallery = galleryRes.rows[0].content_data?.images || [];
+      }
+    } catch (e) {
+      console.error('Failed to load rental gallery:', e);
+    }
+
     return {
       bookings: bookingsFull,
       inventory,
@@ -88,7 +99,8 @@ async function fetchDashboardData() {
       fishSpecies,
       restaurants,
       damagePolicies,
-      guides
+      guides,
+      rentalGallery
     };
   } catch (error) {
     console.error('Critical Admin dashboard query failed:', error);
@@ -103,7 +115,8 @@ async function fetchDashboardData() {
       fishSpecies: [],
       restaurants: [],
       damagePolicies: [],
-      guides: []
+      guides: [],
+      rentalGallery: []
     };
   }
 }

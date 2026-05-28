@@ -96,6 +96,13 @@ export default function AdminDashboard({ session, initialData }) {
   const [editingGuideId, setEditingGuideId] = useState(null);
   const [guideForm, setGuideForm] = useState({ name: '', experience: '', description: '', imageUrl: '' });
 
+  // Rental Gallery State
+  const [rentalGallery, setRentalGallery] = useState(initialData.rentalGallery || []);
+  const [galleryForm, setGalleryForm] = useState({ caption: '', url: '' });
+  const [galleryUploading, setGalleryUploading] = useState(false);
+  const [editingGalleryIdx, setEditingGalleryIdx] = useState(null);
+  const [editingGalleryCaption, setEditingGalleryCaption] = useState('');
+
   // Edit Mode Trackers for Other Catalogs
   const [editingLureId, setEditingLureId] = useState(null);
   const [editingFishId, setEditingFishId] = useState(null);
@@ -1131,6 +1138,7 @@ export default function AdminDashboard({ session, initialData }) {
         {[
           { id: 'overview', label: 'Dashboard Overview', icon: <ShieldCheck className="w-5 h-5" /> },
           { id: 'rentals', label: 'Rental Management', icon: <ShoppingBag className="w-5 h-5" /> },
+          { id: 'rentalGallery', label: 'Rental Gallery', icon: <Plus className="w-5 h-5" /> },
           { id: 'lures', label: 'Add-on Lures', icon: <ShoppingBag className="w-5 h-5" /> },
           { id: 'inventory', label: 'Gear Inventory', icon: <Anchor className="w-5 h-5" /> },
           { id: 'damagePolicies', label: 'Damage Gear Policies', icon: <AlertTriangle className="w-5 h-5" /> },
@@ -1275,6 +1283,7 @@ export default function AdminDashboard({ session, initialData }) {
                       <th className="px-4 py-4">Booking ID</th>
                       <th className="px-4 py-4">Client Contact</th>
                       <th className="px-4 py-4">Booking Specs</th>
+                      <th className="px-4 py-4">Pickup Address</th>
                       <th className="px-4 py-4">Total Fee</th>
                       <th className="px-4 py-4">Current Status</th>
                       <th className="px-4 py-4 text-center">Manage Actions</th>
@@ -1296,6 +1305,9 @@ export default function AdminDashboard({ session, initialData }) {
                           ) : (
                             <span className="block text-xs text-[#002830]">{b.pole_quantity} Poles • {b.rental_duration} Days</span>
                           )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="block text-xs text-[#002830] max-w-[140px]">{b.pickup_address || <span className="text-[#6B7A82] italic">Not provided</span>}</span>
                         </td>
                         <td className="px-4 py-3 text-[#00B5AD] font-black">
                           ${b.total_price}
@@ -1329,6 +1341,220 @@ export default function AdminDashboard({ session, initialData }) {
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+
+          {/* VIEW: RENTAL GALLERY MANAGEMENT */}
+          {activeTab === 'rentalGallery' && (
+            <div className="space-y-8 text-[#002830]">
+              <h3 className="text-xl font-bold uppercase tracking-wider font-['Outfit'] border-b border-[#00B5AD]/20 pb-2.5 text-[#002830]">
+                Rental Gallery Manager
+              </h3>
+              <p className="text-xs text-[#6B7A82] font-semibold -mt-4">
+                Upload photos of your fishing poles, tackle boxes, and rental area. These appear on the public rentals page for customers to see.
+              </p>
+
+              {/* Upload Form */}
+              <div className="p-6 rounded-xl border border-[#00B5AD]/20 bg-[#0A424A]/5 space-y-4">
+                <h4 className="text-sm font-extrabold uppercase tracking-wide font-['Outfit'] text-[#002830]">
+                  Upload New Photo
+                </h4>
+
+                {/* Image File Input */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-black text-[#6B7A82] uppercase tracking-wider">Select Image File</label>
+                  <input
+                    id="gallery-file-input"
+                    type="file"
+                    accept="image/*"
+                    className="w-full text-xs text-[#002830] bg-white border border-[#00B5AD]/20 rounded-lg px-3 py-2.5 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:bg-[#00B5AD] file:text-white file:font-bold file:text-xs file:cursor-pointer cursor-pointer"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setGalleryUploading(true);
+                      setStatusMsg({ type: null, text: '' });
+                      try {
+                        const compressed = await compressImage(file, 1200, 0.80);
+                        const fd = new FormData();
+                        fd.append('file', compressed);
+                        const res = await fetch('/api/admin/upload', { method: 'POST', body: fd });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'Upload failed');
+                        setGalleryForm(prev => ({ ...prev, url: data.url }));
+                        setStatusMsg({ type: 'success', text: 'Image uploaded! Add a caption and click Save.' });
+                      } catch (err) {
+                        setStatusMsg({ type: 'error', text: err.message });
+                      } finally {
+                        setGalleryUploading(false);
+                      }
+                    }}
+                  />
+                  {galleryUploading && (
+                    <div className="flex items-center gap-2 text-[#00B5AD] text-xs font-bold">
+                      <div className="w-3 h-3 border-2 border-[#00B5AD] border-t-transparent rounded-full animate-spin" />
+                      Uploading image...
+                    </div>
+                  )}
+                  {galleryForm.url && !galleryUploading && (
+                    <div className="mt-2 w-32 h-20 rounded-lg overflow-hidden border border-[#00B5AD]/25 shadow-sm">
+                      <img src={galleryForm.url} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Caption */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-black text-[#6B7A82] uppercase tracking-wider">Caption / Label (Optional)</label>
+                  <input
+                    type="text"
+                    value={galleryForm.caption}
+                    onChange={(e) => setGalleryForm(prev => ({ ...prev, caption: e.target.value }))}
+                    placeholder="e.g. Fishing Poles, Tackle Box, Rental Area"
+                    className="w-full bg-white border border-[#00B5AD]/25 rounded-lg px-3 py-2.5 text-xs text-[#002830] outline-none focus:border-[#00B5AD]"
+                  />
+                </div>
+
+                {/* Save Button */}
+                <button
+                  type="button"
+                  disabled={!galleryForm.url || loading}
+                  onClick={async () => {
+                    if (!galleryForm.url) return;
+                    setLoading(true);
+                    setStatusMsg({ type: null, text: '' });
+                    try {
+                      const newImage = { url: galleryForm.url, caption: galleryForm.caption.trim() };
+                      const updated = [...rentalGallery, newImage];
+                      const res = await fetch('/api/admin/rental-gallery', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ images: updated })
+                      });
+                      if (!res.ok) throw new Error('Failed to save gallery');
+                      setRentalGallery(updated);
+                      setGalleryForm({ caption: '', url: '' });
+                      document.getElementById('gallery-file-input').value = '';
+                      setStatusMsg({ type: 'success', text: 'Photo added to gallery successfully!' });
+                    } catch (err) {
+                      setStatusMsg({ type: 'error', text: err.message });
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  className="flex items-center gap-2 bg-[#00B5AD] hover:bg-[#00A39E] disabled:bg-[#00B5AD]/40 text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-lg cursor-pointer transition-all"
+                >
+                  <Plus className="w-4 h-4" /> Save Photo to Gallery
+                </button>
+              </div>
+
+              {/* Gallery Grid */}
+              {rentalGallery.length === 0 ? (
+                <div className="text-center py-12 border border-dashed border-[#00B5AD]/20 rounded-xl">
+                  <p className="text-xs font-semibold text-[#6B7A82]">No photos in gallery yet. Upload your first photo above.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <h4 className="text-sm font-extrabold uppercase tracking-wide text-[#002830]">
+                    Current Gallery ({rentalGallery.length} {rentalGallery.length === 1 ? 'Photo' : 'Photos'})
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {rentalGallery.map((img, idx) => (
+                      <div key={idx} className="rounded-xl border border-[#00B5AD]/15 overflow-hidden bg-white shadow-sm">
+                        {/* Image */}
+                        <div className="aspect-video bg-gray-100 relative">
+                          <img src={img.url} alt={img.caption || `Gallery ${idx+1}`} className="w-full h-full object-cover" />
+                        </div>
+                        {/* Caption + Actions */}
+                        <div className="p-3 space-y-2">
+                          {editingGalleryIdx === idx ? (
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={editingGalleryCaption}
+                                onChange={(e) => setEditingGalleryCaption(e.target.value)}
+                                className="flex-1 bg-white border border-[#00B5AD]/30 rounded-md px-2 py-1 text-xs text-[#002830] outline-none"
+                                placeholder="Caption..."
+                              />
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  setLoading(true);
+                                  try {
+                                    const updated = rentalGallery.map((item, i) =>
+                                      i === idx ? { ...item, caption: editingGalleryCaption.trim() } : item
+                                    );
+                                    const res = await fetch('/api/admin/rental-gallery', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ images: updated })
+                                    });
+                                    if (!res.ok) throw new Error('Save failed');
+                                    setRentalGallery(updated);
+                                    setEditingGalleryIdx(null);
+                                    setStatusMsg({ type: 'success', text: 'Caption updated!' });
+                                  } catch (err) {
+                                    setStatusMsg({ type: 'error', text: err.message });
+                                  } finally {
+                                    setLoading(false);
+                                  }
+                                }}
+                                className="bg-[#00B5AD] text-white text-[9px] font-bold px-2 py-1 rounded-md cursor-pointer"
+                              >Save</button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingGalleryIdx(null)}
+                                className="border border-gray-300 text-[#6B7A82] text-[9px] font-bold px-2 py-1 rounded-md cursor-pointer"
+                              >✕</button>
+                            </div>
+                          ) : (
+                            <p className="text-xs font-semibold text-[#002830] truncate">
+                              {img.caption || <span className="text-[#6B7A82] italic">No caption</span>}
+                            </p>
+                          )}
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingGalleryIdx(idx);
+                                setEditingGalleryCaption(img.caption || '');
+                              }}
+                              className="flex-1 border border-[#00B5AD]/30 text-[#00B5AD] hover:bg-[#00B5AD]/10 text-[9px] font-bold uppercase tracking-wider px-2 py-1.5 rounded-md cursor-pointer transition-all"
+                            >
+                              Edit Caption
+                            </button>
+                            <button
+                              type="button"
+                              disabled={loading}
+                              onClick={async () => {
+                                if (!confirm('Delete this photo from gallery?')) return;
+                                setLoading(true);
+                                try {
+                                  const updated = rentalGallery.filter((_, i) => i !== idx);
+                                  const res = await fetch('/api/admin/rental-gallery', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ images: updated })
+                                  });
+                                  if (!res.ok) throw new Error('Delete failed');
+                                  setRentalGallery(updated);
+                                  setStatusMsg({ type: 'success', text: 'Photo removed from gallery.' });
+                                } catch (err) {
+                                  setStatusMsg({ type: 'error', text: err.message });
+                                } finally {
+                                  setLoading(false);
+                                }
+                              }}
+                              className="border border-red-400/40 text-red-500 hover:bg-red-50 text-[9px] font-bold uppercase tracking-wider px-2 py-1.5 rounded-md cursor-pointer transition-all"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
