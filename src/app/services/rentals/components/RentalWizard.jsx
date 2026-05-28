@@ -95,6 +95,75 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
   const [paypalError, setPaypalError] = useState(null);
   const [referredBy, setReferredBy] = useState('');
 
+  // --- AVAILABILITY LOGIC ---
+  const [bookedSlots, setBookedSlots] = useState([]);
+
+  React.useEffect(() => {
+    if (guideDate && guideBooked) {
+      fetch(`/api/bookings/guide-availability?date=${guideDate}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.slots) setBookedSlots(data.slots);
+        })
+        .catch(err => console.error('Error fetching guide availability:', err));
+    } else {
+      setBookedSlots([]);
+    }
+  }, [guideDate, guideBooked]);
+
+  const ALL_START_TIMES = [
+    { label: "06:00 AM (Early Cast)", value: "06:00 AM" },
+    { label: "07:00 AM", value: "07:00 AM" },
+    { label: "08:00 AM", value: "08:00 AM" },
+    { label: "09:00 AM", value: "09:00 AM" },
+    { label: "10:00 AM", value: "10:00 AM" },
+    { label: "12:00 PM", value: "12:00 PM" },
+    { label: "01:00 PM", value: "01:00 PM" },
+    { label: "02:00 PM", value: "02:00 PM" },
+    { label: "03:00 PM (Sunset Cast)", value: "03:00 PM" }
+  ];
+
+  const parseTime = (timeStr) => {
+    if (!timeStr) return 0;
+    const [time, modifier] = timeStr.split(' ');
+    let [hours, minutes] = time.split(':');
+    hours = parseInt(hours, 10);
+    if (hours === 12 && modifier === 'AM') hours = 0;
+    if (hours < 12 && modifier === 'PM') hours += 12;
+    return hours + (parseInt(minutes || '0', 10) / 60);
+  };
+
+  const isTimeAvailable = (startTimeStr, requestedDurationStr) => {
+    const requestedStart = parseTime(startTimeStr);
+    const requestedDuration = parseInt(requestedDurationStr, 10);
+    const requestedEnd = requestedStart + requestedDuration;
+
+    for (const slot of bookedSlots) {
+      const bookedStart = parseTime(slot.startTime);
+      const bookedEnd = bookedStart + parseInt(slot.duration, 10);
+      
+      // Overlap condition:
+      if (requestedStart < bookedEnd && requestedEnd > bookedStart) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  React.useEffect(() => {
+    // If the currently selected time is now unavailable due to date or duration change, find a new one
+    if (guideBooked && guideDate && bookedSlots.length > 0) {
+      if (!isTimeAvailable(guideStartTime, guideHours)) {
+        const firstAvailable = ALL_START_TIMES.find(t => isTimeAvailable(t.value, guideHours));
+        if (firstAvailable) {
+          setGuideStartTime(firstAvailable.value);
+        } else {
+          setGuideStartTime(''); // None available
+        }
+      }
+    }
+  }, [bookedSlots, guideHours, guideBooked, guideDate]);
+
   // --- CALCULATION LOGIC ---
   const durationDays = parseInt(duration);
   // Gear base rate based on new pricing models: flat $50 per day
@@ -1132,15 +1201,18 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
                     onChange={(e) => setGuideStartTime(e.target.value)}
                     className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] outline-none"
                   >
-                    <option value="06:00 AM">06:00 AM (Early Cast)</option>
-                    <option value="07:00 AM">07:00 AM</option>
-                    <option value="08:00 AM">08:00 AM</option>
-                    <option value="09:00 AM">09:00 AM</option>
-                    <option value="10:00 AM">10:00 AM</option>
-                    <option value="12:00 PM">12:00 PM</option>
-                    <option value="01:00 PM">01:00 PM</option>
-                    <option value="02:00 PM">02:00 PM</option>
-                    <option value="03:00 PM">03:00 PM (Sunset Cast)</option>
+                    {ALL_START_TIMES.map((timeOption) => {
+                      const available = isTimeAvailable(timeOption.value, guideHours);
+                      return (
+                        <option 
+                          key={timeOption.value} 
+                          value={timeOption.value}
+                          disabled={!available}
+                        >
+                          {timeOption.label} {!available ? '(Booked/Unavailable)' : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 

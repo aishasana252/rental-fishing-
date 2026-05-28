@@ -295,6 +295,12 @@ function handleMockQuery(text, params = []) {
     return { rows: userBookings, rowCount: userBookings.length };
   }
 
+  if (sql.includes('SELECT guide_start_time, guide_hours') && sql.includes('guide_date = $1')) {
+    const date = params[0];
+    const booked = db.bookings.filter(b => b.guide_booked === true && b.guide_date === date && b.status !== 'cancelled');
+    return { rows: booked, rowCount: booked.length };
+  }
+
   // 5. INSERT INTO bookings
   if (sql.includes('INSERT INTO bookings')) {
     const [
@@ -316,7 +322,9 @@ function handleMockQuery(text, params = []) {
       paypal_order_id,
       payment_method,
       referred_by,
-      referral_discount
+      referral_discount,
+      pickup_address,
+      guide_start_time
     ] = params;
 
     const newBooking = {
@@ -340,6 +348,8 @@ function handleMockQuery(text, params = []) {
       payment_method: payment_method || 'card',
       referred_by: referred_by || null,
       referral_discount: referral_discount ? parseFloat(referral_discount) : 0.00,
+      pickup_address: pickup_address || null,
+      guide_start_time: guide_start_time || null,
       payment_status: payment_status || 'pending',
       status: status || 'pending',
       created_at: new Date().toISOString()
