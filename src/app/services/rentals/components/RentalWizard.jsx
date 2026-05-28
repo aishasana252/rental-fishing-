@@ -142,8 +142,12 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
       const bookedStart = parseTime(slot.startTime);
       const bookedEnd = bookedStart + parseInt(slot.duration, 10);
       
-      // Overlap condition:
-      if (requestedStart < bookedEnd && requestedEnd > bookedStart) {
+      // Add 1 hour buffer before and after the existing booking
+      const paddedBookedStart = bookedStart - 1;
+      const paddedBookedEnd = bookedEnd + 1;
+      
+      // Overlap condition using padded boundaries:
+      if (requestedStart < paddedBookedEnd && requestedEnd > paddedBookedStart) {
         return false;
       }
     }
