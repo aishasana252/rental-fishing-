@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ShoppingBag, ChevronRight, ChevronLeft, ShieldCheck, AlertCircle, CreditCard, Sparkles, CheckSquare, Square, Info, X } from 'lucide-react';
+import { ShoppingBag, ChevronRight, ChevronLeft, ShieldCheck, AlertCircle, CreditCard, Sparkles, CheckSquare, Square, Info, X, CheckCircle } from 'lucide-react';
 
 export default function RentalWizard({ session, initialLures, initialDamagePolicies, initialGeneralImages, initialGalleryImages, initialGuides }) {
   const router = useRouter();
