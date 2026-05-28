@@ -95,6 +95,12 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 text-sm">
+      <style>{`
+        input[type="date"]::-webkit-calendar-picker-indicator {
+          filter: invert(1) !important;
+          cursor: pointer;
+        }
+      `}</style>
       {status.text && (
         <div
           className={`p-4 rounded-xl text-xs font-bold flex items-start gap-2.5 ${
@@ -222,7 +228,7 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
           placeholder="e.g. Sapphire Beach Resort Lobby, Coki Beach entrance..."
           className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] placeholder-[#3B4E5A] outline-none"
         />
-        <span className="block text-[10px] text-[#6B7A82] font-semibold">
+        <span className="block text-[13px] text-[#00B5AD] font-extrabold tracking-wide mt-1">
           *Roundtrip private transit to St. Thomas hot shorelines is completely free and included!
         </span>
       </div>
