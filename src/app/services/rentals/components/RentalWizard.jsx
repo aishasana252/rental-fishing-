@@ -74,14 +74,8 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
 
   // --- CALCULATION LOGIC ---
   const durationDays = parseInt(duration);
-  // Gear base rate based on new pricing models: 1 day = $75, 3 days = $150, 5 days = $250 flat per pole
-  const getAdultBaseRate = (dur) => {
-    if (dur === '1') return 75;
-    if (dur === '3') return 150;
-    if (dur === '5') return 250;
-    return 75;
-  };
-  const adultBaseRate = getAdultBaseRate(duration);
+  // Gear base rate based on new pricing models: flat $50 per day
+  const adultBaseRate = durationDays * 50;
   const gearPrice = poles * adultBaseRate;
 
   // Children's pole price ($35 one-time/flat fee)
@@ -94,8 +88,8 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
   // Lures Total
   const luresPrice = lures.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  // Security Deposit Calculation (Sum of all Damage Policy fees)
-  const securityDeposit = policiesList.reduce((sum, policy) => sum + parseFloat(policy.price), 0);
+  // Security Deposit Calculation (Flat fee)
+  const securityDeposit = 100.00;
 
   // Total Excursion Booking Price
   const baseTotalPrice = totalGearPrice + luresPrice + securityDeposit;
@@ -480,9 +474,9 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
               </h3>
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { value: '1', label: '1 Day', desc: '$75 total / pole' },
-                  { value: '3', label: '3 Days', desc: '$150 total / pole' },
-                  { value: '5', label: '5 Days', desc: '$250 total / pole' }
+                  { value: '1', label: '1 Day', desc: '$50 total / pole' },
+                  { value: '2', label: '2 Days', desc: '$100 total / pole' },
+                  { value: '3', label: '3 Days', desc: '$150 total / pole' }
                 ].map((item) => (
                   <button
                     key={item.value}
@@ -1181,9 +1175,9 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
                   <span className="text-[#00B5AD] uppercase text-[10px]">Acknowledge Signed</span>
                 </div>
 
-                <div className="flex justify-between text-xs font-bold pt-1.5 border-t border-[#00B5AD]/10 pt-2">
+                <div className="flex justify-between text-[13px] font-black text-red-400 pt-1.5 border-t border-[#00B5AD]/10 pt-2 pb-1">
                   <span>Refundable Security Fee:</span>
-                  <span className="text-[#00B5AD]">${securityDeposit.toFixed(2)}</span>
+                  <span>${securityDeposit.toFixed(2)}</span>
                 </div>
               </div>
             </div>
