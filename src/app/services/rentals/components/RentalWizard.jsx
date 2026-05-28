@@ -15,7 +15,7 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
   const [rentalDate, setRentalDate] = useState(''); // adult rental start date
   const [childPoles, setChildPoles] = useState(0); // 0 to 5 children poles
   const [childRentalDate, setChildRentalDate] = useState(''); // child rental start date
-  const [pickupAddress, setPickupAddress] = useState(''); // pickup/dropoff address
+  const [pickupAddress, setPickupAddress] = useState(''); // pickup/dropoff address — kept in state for potential future use
 
   // Gallery images from admin
   const galleryImages = Array.isArray(initialGalleryImages) ? initialGalleryImages : [];
@@ -129,10 +129,6 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
       alert("Please select a rental start date for the children's fishing poles on the calendar.");
       return;
     }
-    if (step === 1 && !pickupAddress.trim()) {
-      alert('Please enter your pickup & drop-off address.');
-      return;
-    }
     if (step === 3 && !damageAgreed) {
       alert('You must accept the damage policy before proceeding to checkout.');
       return;
@@ -193,7 +189,7 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
         payment_method: 'paypal',
         referred_by: referredBy.trim() || null,
         referral_discount: hasReferral ? 10.00 : 0.00,
-        pickup_address: pickupAddress.trim() || null
+        pickup_address: null
       };
 
       const res = await fetch('/api/bookings', {
@@ -616,25 +612,6 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
                   </div>
                 )}
               </div>
-            </div>
-
-            {/* Pickup & Drop-off Address */}
-            <div className="space-y-2 p-4 rounded-xl border border-[#00B5AD]/20 bg-[#001418]/60 shadow-lg shadow-black/20">
-              <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider flex items-center gap-1.5">
-                <Info className="w-3.5 h-3.5 text-[#00B5AD]" />
-                Pickup & Drop-off Address <span className="text-[#FF4D4D]">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={pickupAddress}
-                onChange={(e) => setPickupAddress(e.target.value)}
-                placeholder="Enter your hotel, resort, or address (e.g. Sapphire Beach Resort, Red Hook)"
-                className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-sm text-[#FFFFFF] placeholder-[#3B4E5A] outline-none transition-colors"
-              />
-              <span className="block text-[11px] font-bold text-[#00B5AD]">
-                *We will pick you up and drop you off at this address — free of charge from Red Hook.
-              </span>
             </div>
 
             {/* Tacklebox Inclusions */}
