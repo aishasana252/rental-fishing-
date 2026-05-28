@@ -9,7 +9,7 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
     hours: '2',
     guideName: 'First Available (Assign Best Expert)',
     startTime: '08:00 AM',
-    pickupLocation: '',
+    pickupLocation: 'Red Hook',
     cardName: '',
     cardNumber: '',
     cardExpiry: '',
@@ -18,19 +18,19 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState({ type: null, text: '' });
   const router = useRouter();
-
+ 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
-
+ 
   // Enforce blackout dates by setting the minimum date to exactly 3 days in the future
   const getThreeDaysOutDate = () => {
     const today = new Date();
     today.setDate(today.getDate() + 3);
     return today.toISOString().split('T')[0];
   };
-
-  const pricePerHour = 75; // Updated rate as requested
+ 
+  const pricePerHour = 65; // Updated rate to $65 as requested
   const totalPrice = parseInt(formData.hours) * pricePerHour;
 
   const handleSubmit = async (e) => {
@@ -189,7 +189,7 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
         <div className="space-y-1.5">
           <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider flex items-center gap-1">
             <Clock className="w-3.5 h-3.5 text-[#00B5AD]" />
-            Duration (Hours - $75/Hr)
+            Duration (Hours - $65/Hr)
           </label>
           <select
             name="hours"
@@ -217,7 +217,7 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
       <div className="space-y-1.5">
         <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider flex items-center gap-1">
           <MapPin className="w-3.5 h-3.5 text-[#00B5AD]" />
-          Resort Pickup & Drop-Off Address (Complimentary)
+          Pick-Up & Drop-Off Address
         </label>
         <input
           type="text"
@@ -225,11 +225,11 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
           required
           value={formData.pickupLocation}
           onChange={handleChange}
-          placeholder="e.g. Sapphire Beach Resort Lobby, Coki Beach entrance..."
+          placeholder="Red Hook (Default pick up & drop off point)"
           className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] placeholder-[#3B4E5A] outline-none"
         />
         <span className="block text-[13px] text-[#00B5AD] font-extrabold tracking-wide mt-1">
-          *Roundtrip private transit to St. Thomas hot shorelines is completely free and included!
+          *Roundtrip private transit from Red Hook to St. Thomas hot shorelines is completely free and included!
         </span>
       </div>
 
@@ -288,7 +288,7 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
       {/* Pricing Summary & Checkout CTA */}
       <div className="border-t border-[#00B5AD]/10 pt-4 flex items-center justify-between gap-4">
         <div>
-          <span className="block text-[10px] font-bold text-[#6B7A82] uppercase tracking-wider">Excursion Total ($75/Hr)</span>
+          <span className="block text-[10px] font-bold text-[#6B7A82] uppercase tracking-wider">Excursion Total ($65/Hr)</span>
           <span className="text-[#00B5AD] text-2xl font-black font-['Outfit']">${totalPrice}.00</span>
         </div>
 

@@ -1,12 +1,14 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Menu, X, User, LogOut, Shield } from 'lucide-react';
 
 export default function Header({ session }) {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
+  const isHome = pathname === '/';
 
   const handleLogout = async () => {
     const res = await fetch('/api/auth/logout', { method: 'POST' });
@@ -57,7 +59,11 @@ export default function Header({ session }) {
         {/* Logo - Center */}
         <div className="flex-shrink-0 flex items-center justify-center mb-2 mt-2 lg:mb-0 lg:mt-0 relative z-40">
           <Link href="/" className="group">
-            <div className="w-28 h-28 sm:w-32 sm:h-32 lg:w-36 lg:h-36 xl:w-40 xl:h-40 relative rounded-full overflow-hidden border-2 border-[#00B5AD] transition-transform duration-300 group-hover:scale-105 shadow-2xl">
+            <div className={`${
+              isHome 
+                ? 'w-36 h-36 sm:w-40 sm:h-40 lg:w-48 lg:h-48 xl:w-52 xl:h-52 border-4' 
+                : 'w-28 h-28 sm:w-32 sm:h-32 lg:w-36 lg:h-36 xl:w-40 xl:h-40 border-2'
+            } relative rounded-full overflow-hidden border-[#00B5AD] transition-all duration-300 group-hover:scale-105 shadow-2xl`}>
               <img
                 src="/assets/logo 1.jpeg"
                 alt="Reel Problems Logo"

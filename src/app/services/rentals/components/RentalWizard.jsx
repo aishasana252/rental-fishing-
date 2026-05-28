@@ -582,6 +582,20 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
             <span className="text-xs font-bold text-[#6B7A82] uppercase">Optional Add-ons</span>
           </div>
 
+          {/* Frozen Fish / Bait Notice */}
+          <div className="p-5 rounded-xl border border-[#00B5AD]/20 bg-[#04282F]/40 backdrop-blur-sm shadow-lg flex flex-col sm:flex-row items-center gap-4 text-left">
+            <div className="p-3 rounded-full bg-[#001418] border border-[#00B5AD]/20 flex-shrink-0 text-[#00B5AD] shadow-md shadow-[#000000]/20">
+              <Info className="w-5 h-5 animate-pulse" />
+            </div>
+            <div className="space-y-1">
+              <span className="block text-xs font-bold text-[#00B5AD] uppercase tracking-wider">🐟 Local Bait Available in Red Hook</span>
+              <p className="text-[13px] text-[#FFFFFF] font-semibold leading-relaxed">
+                Need real bait? <strong className="text-[#00B5AD] font-bold">Frozen fish / bait</strong> is available to purchase directly at <strong className="text-[#00B5AD] font-bold">Red Hook</strong>!
+                It is the perfect addition to pair with your specialized lures for maximum shoreline casting.
+              </p>
+            </div>
+          </div>
+
           {/* Lures Grid */}
           {lures.length === 0 ? (
             <div className="text-center py-12 px-4 border border-[#00B5AD]/20 rounded-2xl bg-[#04282F]/20 space-y-3 max-w-xl mx-auto shadow-lg shadow-[#00B5AD]/5">

@@ -17,7 +17,7 @@ export default async function GuidePage() {
   }
 
   const inclusions = [
-    'Direct resort or harbor pickup & drop-off',
+    'Direct Red Hook pickup & drop-off (free private harbor transit included)',
     'Personal transportation to St. Thomas hot shorelines',
     'Premium shore rod & loaded tacklebox gear included',
     'Ethical guidance & casting/rigging instruction',
@@ -51,11 +51,11 @@ export default async function GuidePage() {
             <div className="absolute top-0 right-0 w-24 h-24 bg-[#00B5AD]/5 rounded-full pointer-events-none blur-xl" />
             <span className="block text-[10px] font-bold text-[#6B7A82] uppercase tracking-wider">All-Inclusive Rate</span>
             <div className="flex items-baseline gap-1 text-[#00B5AD]">
-              <span className="text-5xl font-black font-['Outfit']">$75</span>
+              <span className="text-5xl font-black font-['Outfit']">$65</span>
               <span className="text-lg font-bold text-[#6B7A82]">/ Hour</span>
             </div>
             <p className="text-xs text-[#A0ACB3] font-semibold leading-relaxed">
-              *Full gear, tackle, licenses, and St. Thomas private shoreline transit (with complimentary pickup & drop-off) are 100% covered in the price.
+              *Full gear, tackle, licenses, and St. Thomas private shoreline transit (with complimentary pickup & drop-off from Red Hook) are 100% covered in the price.
             </p>
           </div>
 
