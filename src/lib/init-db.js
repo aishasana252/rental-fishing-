@@ -49,6 +49,8 @@ export async function initDatabase() {
         status VARCHAR(50) DEFAULT 'pending',
         paypal_order_id VARCHAR(100),
         payment_method VARCHAR(50) DEFAULT 'card',
+        referred_by VARCHAR(255),
+        referral_discount DECIMAL(10, 2) DEFAULT 0.00,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -168,6 +170,14 @@ export async function initDatabase() {
         image_url TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
+    `);
+
+    // Add self-healing table migrations for referral program support
+    await query(`
+      ALTER TABLE bookings ADD COLUMN IF NOT EXISTS referred_by VARCHAR(255);
+    `);
+    await query(`
+      ALTER TABLE bookings ADD COLUMN IF NOT EXISTS referral_discount DECIMAL(10, 2) DEFAULT 0.00;
     `);
 
     // --- SEEDING DATA ---

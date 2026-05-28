@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Clock, Calendar, MapPin, CreditCard, CheckCircle, ArrowRight, User } from 'lucide-react';
+import { Clock, Calendar, MapPin, CreditCard, CheckCircle, ArrowRight, User, Sparkles } from 'lucide-react';
 
 export default function GuideBookingForm({ session, initialGuides = [] }) {
   const [formData, setFormData] = useState({
@@ -10,6 +10,7 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
     guideName: 'First Available (Assign Best Expert)',
     startTime: '08:00 AM',
     pickupLocation: 'Red Hook',
+    referredBy: '',
     cardName: '',
     cardNumber: '',
     cardExpiry: '',
@@ -35,7 +36,9 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
   };
  
   const pricePerHour = 65; // Updated rate to $65 as requested
-  const totalPrice = parseInt(formData.hours) * pricePerHour;
+  const baseTotal = parseInt(formData.hours) * pricePerHour;
+  const hasReferral = !!formData.referredBy.trim();
+  const totalPrice = hasReferral ? Math.max(0, baseTotal - 10) : baseTotal;
 
   // Dynamic PayPal SDK Loader
   React.useEffect(() => {
@@ -126,7 +129,9 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
         payment_status: 'paid',
         status: 'confirmed',
         paypal_order_id: orderId,
-        payment_method: 'paypal'
+        payment_method: 'paypal',
+        referred_by: formData.referredBy.trim() || null,
+        referral_discount: hasReferral ? 10.00 : 0.00
       };
 
       const res = await fetch('/api/bookings', {
@@ -185,7 +190,10 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
         damage_agreement: true, // Auto-agree for guides
         total_price: totalPrice,
         payment_status: 'paid', // Auto paid on checkout
-        status: 'confirmed'
+        status: 'confirmed',
+        payment_method: 'card',
+        referred_by: formData.referredBy.trim() || null,
+        referral_discount: hasReferral ? 10.00 : 0.00
       };
 
       const res = await fetch('/api/bookings', {
@@ -353,6 +361,28 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
         <span className="block text-[13px] text-[#00B5AD] font-extrabold tracking-wide mt-1">
           *Roundtrip private transit from Red Hook to St. Thomas hot shorelines is completely free and included!
         </span>
+      </div>
+
+      {/* Referral Input Box */}
+      <div className="space-y-2 p-4 rounded-xl border border-[#00B5AD]/15 bg-[#001418]/60 shadow-lg shadow-black/30">
+        <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider flex items-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5 text-[#00B5AD]" />
+          Company / Name Referred By (Optional)
+        </label>
+        <input
+          type="text"
+          name="referredBy"
+          value={formData.referredBy}
+          onChange={handleChange}
+          placeholder="Who referred you? (e.g. Sapphire Beach Resort, John Doe)"
+          className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-2.5 text-xs text-[#FFFFFF] placeholder-[#3B4E5A] outline-none"
+        />
+        {hasReferral && (
+          <div className="text-xs font-extrabold text-[#00B5AD] flex items-center gap-1.5 animate-[fadeIn_0.3s_ease-out]">
+            <CheckCircle className="w-4 h-4 text-[#00B5AD] flex-shrink-0" />
+            <span>🎉 Referral Applied: -$10.00 discount applied to your excursion total!</span>
+          </div>
+        )}
       </div>
 
       {/* Payment Method Selector */}

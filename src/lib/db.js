@@ -298,7 +298,9 @@ function handleMockQuery(text, params = []) {
       child_pole_quantity,
       child_pole_date,
       paypal_order_id,
-      payment_method
+      payment_method,
+      referred_by,
+      referral_discount
     ] = params;
 
     const newBooking = {
@@ -320,6 +322,8 @@ function handleMockQuery(text, params = []) {
       child_pole_date: child_pole_date || null,
       paypal_order_id: paypal_order_id || null,
       payment_method: payment_method || 'card',
+      referred_by: referred_by || null,
+      referral_discount: referral_discount ? parseFloat(referral_discount) : 0.00,
       payment_status: payment_status || 'pending',
       status: status || 'pending',
       created_at: new Date().toISOString()

@@ -27,6 +27,8 @@ export async function POST(request) {
       child_pole_date,
       paypal_order_id,
       payment_method,
+      referred_by,
+      referral_discount,
       selectedLures // Expect [{ id, name, price, quantity }] for rentals
     } = body;
 
@@ -36,8 +38,9 @@ export async function POST(request) {
         user_id, rental_duration, pole_quantity, 
         guide_booked, guide_hours, guide_date, guide_pickup_location, 
         damage_agreement, total_price, security_added, payment_status, status,
-        rental_date, child_pole_quantity, child_pole_date, paypal_order_id, payment_method
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *;`,
+        rental_date, child_pole_quantity, child_pole_date, paypal_order_id, payment_method,
+        referred_by, referral_discount
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) RETURNING *;`,
       [
         session.id,
         rental_duration ? parseInt(rental_duration) : null,
@@ -55,7 +58,9 @@ export async function POST(request) {
         child_pole_quantity ? parseInt(child_pole_quantity) : 0,
         child_pole_date || null,
         paypal_order_id || null,
-        payment_method || 'card'
+        payment_method || 'card',
+        referred_by || null,
+        referral_discount ? parseFloat(referral_discount) : 0.00
       ]
     );
 

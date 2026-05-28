@@ -66,6 +66,7 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
   const [paymentMethod, setPaymentMethod] = useState('card'); // 'card' or 'paypal'
   const [paypalLoaded, setPaypalLoaded] = useState(false);
   const [paypalError, setPaypalError] = useState(null);
+  const [referredBy, setReferredBy] = useState('');
 
   // --- LOCALSTORAGE PERSISTENCE ---
   // Load state on mount to prevent Next.js hydration mismatch
@@ -90,6 +91,9 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
 
     const savedChildRentalDate = localStorage.getItem('rental_child_date');
     if (savedChildRentalDate) setChildRentalDate(savedChildRentalDate);
+
+    const savedReferredBy = localStorage.getItem('rental_referred_by');
+    if (savedReferredBy) setReferredBy(savedReferredBy);
 
     const savedLures = localStorage.getItem('rental_lures');
     if (savedLures) {
@@ -139,6 +143,10 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
   React.useEffect(() => {
     localStorage.setItem('rental_lures', JSON.stringify(lures.map((l) => ({ id: l.id, quantity: l.quantity }))));
   }, [lures]);
+
+  React.useEffect(() => {
+    localStorage.setItem('rental_referred_by', referredBy);
+  }, [referredBy]);
 
   // Dynamic PayPal SDK Loader
   React.useEffect(() => {
@@ -240,7 +248,9 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
   const securityDeposit = policiesList.reduce((sum, policy) => sum + parseFloat(policy.price), 0);
 
   // Total Excursion Booking Price
-  const totalPrice = totalGearPrice + luresPrice + securityDeposit;
+  const baseTotalPrice = totalGearPrice + luresPrice + securityDeposit;
+  const hasReferral = !!referredBy.trim();
+  const totalPrice = hasReferral ? Math.max(0, baseTotalPrice - 10) : baseTotalPrice;
 
   // --- QUANTITY HANDLERS ---
   const handleLureQty = (id, change) => {
@@ -326,7 +336,9 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
         child_pole_date: childRentalDate || null,
         selectedLures,
         paypal_order_id: orderId,
-        payment_method: 'paypal'
+        payment_method: 'paypal',
+        referred_by: referredBy.trim() || null,
+        referral_discount: hasReferral ? 10.00 : 0.00
       };
 
       const res = await fetch('/api/bookings', {
@@ -348,6 +360,7 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
       localStorage.removeItem('rental_date');
       localStorage.removeItem('rental_child_poles');
       localStorage.removeItem('rental_child_date');
+      localStorage.removeItem('rental_referred_by');
 
       setStatusMsg({
         type: 'success',
@@ -412,7 +425,9 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
         child_pole_quantity: childPoles,
         child_pole_date: childRentalDate || null,
         selectedLures,
-        payment_method: 'card'
+        payment_method: 'card',
+        referred_by: referredBy.trim() || null,
+        referral_discount: hasReferral ? 10.00 : 0.00
       };
 
       const res = await fetch('/api/bookings', {
@@ -434,6 +449,7 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
       localStorage.removeItem('rental_date');
       localStorage.removeItem('rental_child_poles');
       localStorage.removeItem('rental_child_date');
+      localStorage.removeItem('rental_referred_by');
 
       setStatusMsg({
         type: 'success',
@@ -1033,6 +1049,27 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
 
             {session ? (
               <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+                {/* Referral Input Box */}
+                <div className="space-y-2 p-4 rounded-xl border border-[#00B5AD]/15 bg-[#001418]/60 shadow-lg shadow-black/30">
+                  <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#00B5AD]" />
+                    Company / Name Referred By (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={referredBy}
+                    onChange={(e) => setReferredBy(e.target.value)}
+                    placeholder="Who referred you? (e.g. Sapphire Beach Resort, John Doe)"
+                    className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-2.5 text-xs text-[#FFFFFF] placeholder-[#3B4E5A] outline-none"
+                  />
+                  {hasReferral && (
+                    <div className="text-xs font-extrabold text-[#00B5AD] flex items-center gap-1.5 animate-[fadeIn_0.3s_ease-out]">
+                      <ShieldCheck className="w-4 h-4 text-[#00B5AD] flex-shrink-0" />
+                      <span>🎉 Referral Applied: -$10.00 discount applied to your rental total!</span>
+                    </div>
+                  )}
+                </div>
+
                 {/* Payment Method Selector */}
                 <div className="space-y-3">
                   <span className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider">
