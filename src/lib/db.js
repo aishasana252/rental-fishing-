@@ -296,7 +296,9 @@ function handleMockQuery(text, params = []) {
       status,
       rental_date,
       child_pole_quantity,
-      child_pole_date
+      child_pole_date,
+      paypal_order_id,
+      payment_method
     ] = params;
 
     const newBooking = {
@@ -316,6 +318,8 @@ function handleMockQuery(text, params = []) {
       rental_date: rental_date || null,
       child_pole_quantity: child_pole_quantity ? parseInt(child_pole_quantity) : 0,
       child_pole_date: child_pole_date || null,
+      paypal_order_id: paypal_order_id || null,
+      payment_method: payment_method || 'card',
       payment_status: payment_status || 'pending',
       status: status || 'pending',
       created_at: new Date().toISOString()

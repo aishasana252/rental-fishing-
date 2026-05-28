@@ -47,6 +47,8 @@ export async function initDatabase() {
         child_pole_date DATE,
         payment_status VARCHAR(50) DEFAULT 'pending',
         status VARCHAR(50) DEFAULT 'pending',
+        paypal_order_id VARCHAR(100),
+        payment_method VARCHAR(50) DEFAULT 'card',
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
