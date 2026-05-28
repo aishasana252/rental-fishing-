@@ -4,13 +4,20 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShoppingBag, ChevronRight, ChevronLeft, ShieldCheck, AlertCircle, CreditCard, Sparkles, CheckSquare, Square, Info, X } from 'lucide-react';
 
-export default function RentalWizard({ session, initialLures, initialDamagePolicies, initialGeneralImages, initialGalleryImages }) {
+export default function RentalWizard({ session, initialLures, initialDamagePolicies, initialGeneralImages, initialGalleryImages, initialGuides }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [activeLightboxPolicy, setActiveLightboxPolicy] = useState(null);
 
   // STEP 1 STATE: Gear Selection
-  const [duration, setDuration] = useState('3'); // '1', '3', '5' days
+  const [duration, setDuration] = useState('3'); // '1', '2', '3' days
+
+  // Date helper for guide
+  const getThreeDaysOutDate = () => {
+    const today = new Date();
+    today.setDate(today.getDate() + 3);
+    return today.toISOString().split('T')[0];
+  };
   const [poles, setPoles] = useState(1); // 1 to 5 poles
   const [rentalDate, setRentalDate] = useState(''); // adult rental start date
   const [childPoles, setChildPoles] = useState(0); // 0 to 5 children poles
@@ -57,7 +64,15 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
         { id: 6, name: 'Late Return (Over 1 Hour past window)', price: 100.00, image_url: '' }
       ];
 
-  // STEP 4 STATE: Payment Checkout
+  // STEP 4 STATE: Guide Setup
+  const [guideBooked, setGuideBooked] = useState(false);
+  const [guideDate, setGuideDate] = useState('');
+  const [guideHours, setGuideHours] = useState('2');
+  const [guideStartTime, setGuideStartTime] = useState('08:00 AM');
+  const [guidePickupLocation, setGuidePickupLocation] = useState('');
+  const [guideDropoffLocation, setGuideDropoffLocation] = useState('');
+
+  // STEP 5 STATE: Payment Checkout
   const [checkoutForm, setCheckoutForm] = useState({
     cardName: '',
     cardNumber: '',
@@ -91,8 +106,12 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
   // Security Deposit Calculation (Flat fee)
   const securityDeposit = 100.00;
 
+  // Guide Price
+  const guidePricePerHour = 65;
+  const guidePrice = guideBooked ? parseInt(guideHours) * guidePricePerHour : 0;
+
   // Total Excursion Booking Price
-  const baseTotalPrice = totalGearPrice + luresPrice + securityDeposit;
+  const baseTotalPrice = totalGearPrice + luresPrice + securityDeposit + guidePrice;
   const hasReferral = !!referredBy.trim();
   const totalPrice = hasReferral ? Math.max(0, baseTotalPrice - 10) : baseTotalPrice;
 
@@ -124,8 +143,18 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
       return;
     }
     if (step === 3 && !damageAgreed) {
-      alert('You must accept the damage policy before proceeding to checkout.');
+      alert('You must accept the damage policy before proceeding to charter selection.');
       return;
+    }
+    if (step === 4 && guideBooked) {
+      if (!guideDate) {
+        alert('Please select an excursion date for your guided charter.');
+        return;
+      }
+      if (!guidePickupLocation.trim() || !guideDropoffLocation.trim()) {
+        alert('Please specify both pick up and drop off addresses for the charter.');
+        return;
+      }
     }
     setStep((prev) => prev + 1);
   };
@@ -169,7 +198,10 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
       const payload = {
         rental_duration: durationDays,
         pole_quantity: poles,
-        guide_booked: false,
+        guide_booked: guideBooked,
+        guide_hours: guideBooked ? parseInt(guideHours) : null,
+        guide_date: guideBooked ? guideDate : null,
+        guide_pickup_location: guideBooked ? `Guide: Assigned Best Expert | Time: ${guideStartTime} | Pickup: ${guidePickupLocation} | Drop-off: ${guideDropoffLocation}` : null,
         damage_agreement: damageAgreed,
         total_price: totalPrice,
         security_added: securityDeposit,
@@ -347,7 +379,7 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
 
   // PayPal Buttons Render Effect
   React.useEffect(() => {
-    if (!paypalLoaded || paymentMethod !== 'paypal' || step !== 4) return;
+    if (!paypalLoaded || paymentMethod !== 'paypal' || step !== 5) return;
 
     const container = document.getElementById('paypal-button-container');
     if (!container) return;
@@ -363,7 +395,7 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
               amount: {
                 value: totalPrice.toFixed(2)
               },
-              description: `Fishing Gear Rental: ${poles} Adult Pole(s), ${childPoles} Children Pole(s), ${durationDays} Day(s)`
+              description: `Fishing Gear (${durationDays} Days) ${guideBooked ? '+ Charter' : ''}`
             }]
           });
         },
@@ -435,7 +467,7 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
 
       {/* 1. VISUAL STEP INDICATOR */}
       <div className="flex justify-between items-center max-w-xl mx-auto border-b border-[#00B5AD]/10 pb-6">
-        {[1, 2, 3, 4].map((num) => (
+        {[1, 2, 3, 4, 5].map((num) => (
           <div key={num} className="flex items-center gap-2">
             <div
               className={`w-9 h-9 rounded-full font-black flex items-center justify-center text-xs transition-all duration-300 ${
@@ -980,8 +1012,158 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
         </div>
       )}
 
-      {/* STEP 4: CHECKOUT & PAYMENT PAGE */}
+      {/* STEP 4: GUIDED CHARTER SETUP */}
       {step === 4 && (
+        <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
+          <div className="text-center max-w-2xl mx-auto space-y-3">
+            <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-wider text-[#FFFFFF] font-['Outfit']">
+              4. Add a Guided Charter?
+            </h3>
+            <p className="text-sm text-[#A0ACB3] font-semibold leading-relaxed">
+              Don't waste time looking for fish! Add a premium shoreline charter. Our experts will pick you up, take you to the hot spots, and show you exactly how to cast and rig.
+            </p>
+          </div>
+
+          <div className="bg-[#04282F]/30 border border-[#00B5AD]/15 p-6 rounded-2xl shadow-xl max-w-3xl mx-auto space-y-8">
+            <div className="flex items-center gap-4 border-b border-[#00B5AD]/15 pb-6">
+              <button
+                type="button"
+                onClick={() => setGuideBooked(!guideBooked)}
+                className="text-[#00B5AD] hover:scale-105 transition-transform cursor-pointer"
+              >
+                {guideBooked ? (
+                  <CheckSquare className="w-6 h-6 fill-[#00B5AD] text-[#001418]" />
+                ) : (
+                  <Square className="w-6 h-6 text-[#00B5AD]/60" />
+                )}
+              </button>
+              <div className="space-y-1 select-none text-left" onClick={() => setGuideBooked(!guideBooked)}>
+                <h5 className="text-sm font-black uppercase text-[#FFFFFF] cursor-pointer hover:text-[#00B5AD] transition-colors">Yes, include a Guided Shoreline Charter ($65/hr)</h5>
+                <p className="text-xs font-semibold text-[#A0ACB3]">Select this to add expert guidance and private transit to your gear rental!</p>
+              </div>
+            </div>
+
+            {guideBooked && (
+              <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+                {/* Date & Hours Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider">
+                      Charter Date (Min 3-Days Advance)
+                    </label>
+                    <input
+                      type="date"
+                      name="guideDate"
+                      required
+                      value={guideDate}
+                      onChange={(e) => setGuideDate(e.target.value)}
+                      min={getThreeDaysOutDate()}
+                      className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider">
+                      Duration (Hours - $65/Hr)
+                    </label>
+                    <select
+                      name="guideHours"
+                      value={guideHours}
+                      onChange={(e) => setGuideHours(e.target.value)}
+                      className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] outline-none"
+                    >
+                      {[1,2,3,4,5,6,7,8,9,10,11,12].map(hr => (
+                        <option key={hr} value={hr}>{hr} Hours Excursion {hr===6 ? '(Half Day)' : hr===8 ? '(Full Day)' : ''}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Excursion Start Time */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider">
+                    Select Start Time
+                  </label>
+                  <select
+                    name="guideStartTime"
+                    value={guideStartTime}
+                    onChange={(e) => setGuideStartTime(e.target.value)}
+                    className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] outline-none"
+                  >
+                    <option value="06:00 AM">06:00 AM (Early Cast)</option>
+                    <option value="07:00 AM">07:00 AM</option>
+                    <option value="08:00 AM">08:00 AM</option>
+                    <option value="09:00 AM">09:00 AM</option>
+                    <option value="10:00 AM">10:00 AM</option>
+                    <option value="12:00 PM">12:00 PM</option>
+                    <option value="01:00 PM">01:00 PM</option>
+                    <option value="02:00 PM">02:00 PM</option>
+                    <option value="03:00 PM">03:00 PM (Sunset Cast)</option>
+                  </select>
+                </div>
+
+                {/* Pickup & Dropoff Location */}
+                <div className="space-y-3">
+                  <span className="block text-[13px] text-[#00B5AD] font-extrabold tracking-wide">
+                    Please choose your pick up and drop off address:
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider">
+                        Pick Up Address
+                      </label>
+                      <input
+                        type="text"
+                        name="guidePickupLocation"
+                        required
+                        value={guidePickupLocation}
+                        onChange={(e) => setGuidePickupLocation(e.target.value)}
+                        placeholder="Where to pick you up?"
+                        className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] placeholder-[#3B4E5A] outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider">
+                        Drop Off Address
+                      </label>
+                      <input
+                        type="text"
+                        name="guideDropoffLocation"
+                        required
+                        value={guideDropoffLocation}
+                        onChange={(e) => setGuideDropoffLocation(e.target.value)}
+                        placeholder="Where to drop you off?"
+                        className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] placeholder-[#3B4E5A] outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Controls */}
+            <div className="border-t border-[#00B5AD]/10 pt-6 flex justify-between items-center gap-4">
+              <button
+                type="button"
+                onClick={prevStep}
+                className="flex items-center gap-1 border border-[#6B7A82]/30 text-[#A0ACB3] hover:text-[#FFFFFF] px-5 py-3 rounded-lg text-xs font-extrabold uppercase tracking-wider cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4" /> Back
+              </button>
+              <button
+                type="button"
+                onClick={nextStep}
+                className="flex items-center gap-1 bg-[#00B5AD] hover:bg-[#00A39E] text-[#FFFFFF] px-6 py-3 rounded-lg text-xs font-extrabold uppercase tracking-wider cursor-pointer shadow-md shadow-[#00B5AD]/15"
+              >
+                Proceed to Checkout <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 5: CHECKOUT & PAYMENT PAGE */}
+      {step === 5 && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           
           {/* Form Checkout - 7 Columns */}
@@ -1163,10 +1345,30 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
                       .filter((l) => l.quantity > 0)
                       .map((l) => (
                         <div key={l.id} className="flex justify-between text-[11px] text-[#A0ACB3]">
-                          <span>{l.name} (x{l.quantity})</span>
-                          <span className="text-[#FFFFFF]">${(l.price * l.quantity).toFixed(2)}</span>
+                           <span>{l.name} (x{l.quantity})</span>
+                           <span className="text-[#FFFFFF]">${(l.price * l.quantity).toFixed(2)}</span>
                         </div>
                       ))}
+                  </div>
+                )}
+
+                {/* Show Guided Charter if booked */}
+                {guideBooked && (
+                  <div className="space-y-1 border-t border-[#00B5AD]/10 pt-2">
+                    <span className="block text-[9px] font-bold text-[#6B7A82] uppercase tracking-wider">Guided Shoreline Charter</span>
+                    <div className="flex justify-between">
+                      <span>Duration:</span>
+                      <span className="text-[#FFFFFF]">{guideHours} Hours</span>
+                    </div>
+                    {guideDate && (
+                      <div className="text-[10px] text-[#00B5AD] font-bold">
+                        [{new Date(guideDate).toLocaleDateString()} at {guideStartTime}]
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span>Charter Price:</span>
+                      <span className="text-[#FFFFFF]">${guidePrice}.00</span>
+                    </div>
                   </div>
                 )}
 

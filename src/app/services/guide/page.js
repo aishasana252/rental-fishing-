@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { getSession } from '@/lib/auth';
 import { query } from '@/lib/db';
 import { Compass, Calendar, Clock, MapPin, CheckCircle, ShieldAlert, DollarSign } from 'lucide-react';
-import GuideBookingForm from './components/GuideBookingForm';
 
 export default async function GuidePage() {
   const session = await getSession();
@@ -83,7 +82,17 @@ export default async function GuidePage() {
           </h3>
 
           {session ? (
-            <GuideBookingForm session={session} initialGuides={guides} />
+            <div className="text-center py-8 space-y-4">
+              <p className="text-sm text-[#A0ACB3] font-semibold leading-relaxed mb-6">
+                To provide the best possible experience, all guided charters are now booked alongside your gear rental. Click below to start your unified booking process.
+              </p>
+              <Link
+                href="/services/rentals"
+                className="inline-block bg-[#00B5AD] hover:bg-[#00A39E] text-[#FFFFFF] font-extrabold text-sm uppercase tracking-wider px-8 py-4 rounded-xl shadow-lg shadow-[#00B5AD]/20 transition-all hover:scale-105"
+              >
+                Start Gear & Charter Booking
+              </Link>
+            </div>
           ) : (
             <div className="text-center py-12 px-4 space-y-6">
               <div className="p-4 rounded-full bg-[#3B4E5A]/10 border border-[#3B4E5A]/25 w-16 h-16 flex items-center justify-center mx-auto text-[#6B7A82]">
