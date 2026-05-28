@@ -364,7 +364,7 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
 
   // Dynamic PayPal SDK Loader
   React.useEffect(() => {
-    if (step !== 4 || paymentMethod !== 'paypal') return;
+    if (step !== 5 || paymentMethod !== 'paypal') return;
 
     if (window.paypal) {
       setPaypalLoaded(true);
