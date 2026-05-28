@@ -31,26 +31,23 @@ export async function POST(request) {
 
     const content_data = { images };
 
-    // Upsert: update if exists, insert if not
-    const existing = await query(
-      `SELECT id FROM site_content WHERE section_key = 'rental_gallery' LIMIT 1;`
+    // Try UPDATE first, if no rows affected then INSERT
+    const updateRes = await query(
+      `UPDATE site_content SET content_data = $1 WHERE section_key = $2 RETURNING section_key;`,
+      [JSON.stringify(content_data), 'rental_gallery']
     );
 
-    if (existing.rows.length > 0) {
+    if (updateRes.rows.length === 0) {
+      // Row doesn't exist yet — insert it
       await query(
-        `UPDATE site_content SET content_data = $1 WHERE section_key = 'rental_gallery';`,
-        [JSON.stringify(content_data)]
-      );
-    } else {
-      await query(
-        `INSERT INTO site_content (section_key, content_data) VALUES ('rental_gallery', $1);`,
-        [JSON.stringify(content_data)]
+        `INSERT INTO site_content (section_key, content_data) VALUES ($1, $2);`,
+        ['rental_gallery', JSON.stringify(content_data)]
       );
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Rental gallery POST error:', error);
-    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Internal server error.' }, { status: 500 });
   }
 }
