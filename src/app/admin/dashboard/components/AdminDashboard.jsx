@@ -1253,7 +1253,7 @@ export default function AdminDashboard({ session, initialData }) {
                         <tr key={b.id} className="hover:bg-[#00B5AD]/5">
                           <td className="px-4 py-2.5 font-mono text-[#002830] font-bold">{b.id.slice(0,6).toUpperCase()}</td>
                           <td className="px-4 py-2.5 text-[#002830]">{b.full_name || 'Customer'}</td>
-                          <td className="px-4 py-2.5 text-[#002830]">{b.guide_booked ? 'Guided Charter' : `${b.pole_quantity} Poles Rental`}</td>
+                          <td className="px-4 py-2.5 text-[#002830]">{b.guide_booked ? 'Guided Charter' : `${b.pole_quantity} Poles${b.child_pole_quantity > 0 ? ` (+${b.child_pole_quantity} Child)` : ''} Rental`}</td>
                           <td className="px-4 py-2.5 text-[#00B5AD] font-bold">${b.total_price}</td>
                           <td className="px-4 py-2.5">
                             <span className="px-2 py-0.5 rounded-full border text-[9px] font-black uppercase border-[#00B5AD]/25 text-[#00B5AD]">
@@ -1303,7 +1303,9 @@ export default function AdminDashboard({ session, initialData }) {
                           {b.guide_booked ? (
                             <span className="text-xs font-bold text-yellow-600 uppercase tracking-wide">Guided Trip</span>
                           ) : (
-                            <span className="block text-xs text-[#002830]">{b.pole_quantity} Poles • {b.rental_duration} Days</span>
+                            <span className="block text-xs text-[#002830]">
+                              {b.pole_quantity} Poles{b.child_pole_quantity > 0 ? ` (+${b.child_pole_quantity} Child)` : ''} • {b.rental_duration} Days
+                            </span>
                           )}
                         </td>
                         <td className="px-4 py-3">
