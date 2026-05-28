@@ -44,7 +44,7 @@ export default async function GuidePage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
         
         {/* Left Side: Charter Details & Inclusions - 5 Columns */}
-        <div className="lg:col-span-5 space-y-6 flex flex-col justify-center">
+        <div className="lg:col-span-5 space-y-6 flex flex-col justify-start">
           
           {/* Pricing Card */}
           <div className="p-6 rounded-2xl border border-[#00B5AD]/20 bg-[#04282F]/30 shadow-xl space-y-3 relative overflow-hidden">
