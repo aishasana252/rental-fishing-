@@ -1126,8 +1126,8 @@ export default function AdminDashboard({ session, initialData }) {
           </div>
         </div>
 
-        {/* Scrollable container for menu items to prevent cutoff on small height screens */}
-        <div className="space-y-2 overflow-y-auto max-h-[calc(100vh-280px)] pr-1">
+        {/* Container for menu items */}
+        <div className="space-y-2 pr-1">
         {[
           { id: 'overview', label: 'Dashboard Overview', icon: <ShieldCheck className="w-5 h-5" /> },
           { id: 'rentals', label: 'Rental Management', icon: <ShoppingBag className="w-5 h-5" /> },

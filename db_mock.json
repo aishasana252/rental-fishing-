@@ -174,5 +174,28 @@
     }
   ],
   "contact_messages": [],
-  "damage_policies": []
+  "damage_policies": [],
+  "guides": [
+    {
+      "id": 1,
+      "name": "Capt. Dan",
+      "experience": "15+ Yrs Exp",
+      "description": "Shore Cast Master",
+      "image_url": "/assets/logo 1.jpeg"
+    },
+    {
+      "id": 2,
+      "name": "Sarah",
+      "experience": "8+ Yrs Exp",
+      "description": "Fly & Wading Pro",
+      "image_url": "/assets/logo 1.jpeg"
+    },
+    {
+      "id": 3,
+      "name": "Marcus",
+      "experience": "10+ Yrs Exp",
+      "description": "Tarpon Secret Spots",
+      "image_url": "/assets/logo 1.jpeg"
+    }
+  ]
 }
