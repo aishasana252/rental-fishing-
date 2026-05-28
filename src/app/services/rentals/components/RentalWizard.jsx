@@ -472,23 +472,23 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
             </div>
 
             {/* Tacklebox Inclusions */}
-            <div className="p-6 rounded-xl border border-[#00B5AD]/15 bg-[#0A424A]/40 space-y-4">
-              <h4 className="text-[#FFFFFF] text-xs font-black uppercase tracking-wider border-b border-[#00B5AD]/10 pb-2 flex items-center gap-2">
-                <ShoppingBag className="w-4 h-4 text-[#00B5AD]" />
+            <div className="p-6 rounded-xl border border-[#FF4D4D]/25 bg-[#25080C]/35 backdrop-blur-sm shadow-lg shadow-[#FF4D4D]/5 space-y-4">
+              <h4 className="text-[#FFFFFF] text-xs font-black uppercase tracking-wider border-b border-[#FF4D4D]/15 pb-2 flex items-center gap-2">
+                <ShoppingBag className="w-4 h-4 text-[#FF4D4D] animate-pulse" />
                 Included In Your Tacklebox:
               </h4>
-              <ul className="grid grid-cols-2 gap-3 text-xs font-semibold text-[#A0ACB3]">
+              <ul className="grid grid-cols-2 gap-3 text-xs font-semibold text-[#E2E8F0]">
                 <li className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[#00B5AD]" /> Steel Rigging Pliers
+                  <ShieldCheck className="w-4 h-4 text-[#FF4D4D]" /> Steel Rigging Pliers
                 </li>
                 <li className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[#00B5AD]" /> Two Hook Sizes (Heavy-duty)
+                  <ShieldCheck className="w-4 h-4 text-[#FF4D4D]" /> Two Hook Sizes (Heavy-duty)
                 </li>
                 <li className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[#00B5AD]" /> Two Lead Weight Sizes
+                  <ShieldCheck className="w-4 h-4 text-[#FF4D4D]" /> Two Lead Weight Sizes
                 </li>
                 <li className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[#00B5AD]" /> Pre-rigged Casting Lures
+                  <ShieldCheck className="w-4 h-4 text-[#FF4D4D]" /> Pre-rigged Casting Lures
                 </li>
               </ul>
             </div>
@@ -583,14 +583,14 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
           </div>
 
           {/* Frozen Fish / Bait Notice */}
-          <div className="p-5 rounded-xl border border-[#00B5AD]/20 bg-[#04282F]/40 backdrop-blur-sm shadow-lg flex flex-col sm:flex-row items-center gap-4 text-left">
-            <div className="p-3 rounded-full bg-[#001418] border border-[#00B5AD]/20 flex-shrink-0 text-[#00B5AD] shadow-md shadow-[#000000]/20">
-              <Info className="w-5 h-5 animate-pulse" />
+          <div className="p-5 rounded-xl border border-[#FF4D4D]/25 bg-[#25080C]/35 backdrop-blur-sm shadow-lg shadow-[#FF4D4D]/5 flex flex-col sm:flex-row items-center gap-4 text-left">
+            <div className="p-3 rounded-full bg-[#001418] border border-[#FF4D4D]/25 flex-shrink-0 text-[#FF4D4D] shadow-md shadow-[#000000]/20 animate-pulse">
+              <Info className="w-5 h-5" />
             </div>
             <div className="space-y-1">
-              <span className="block text-xs font-bold text-[#00B5AD] uppercase tracking-wider">🐟 Local Bait Available in Red Hook</span>
+              <span className="block text-xs font-bold text-[#FF4D4D] uppercase tracking-wider">🐟 Local Bait Available in Red Hook</span>
               <p className="text-[13px] text-[#FFFFFF] font-semibold leading-relaxed">
-                Need real bait? <strong className="text-[#00B5AD] font-bold">Frozen fish / bait</strong> is available to purchase directly at <strong className="text-[#00B5AD] font-bold">Red Hook</strong>!
+                Need real bait? <strong className="text-[#FF4D4D] font-bold">Frozen fish / bait</strong> is available to purchase directly at <strong className="text-[#FF4D4D] font-bold">Red Hook</strong>!
                 It is the perfect addition to pair with your specialized lures for maximum shoreline casting.
               </p>
             </div>

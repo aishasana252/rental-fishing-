@@ -17,7 +17,7 @@ async function getFishSpecies() {
     {
       id: 1,
       name: 'Snook (Common)',
-      description: 'A highly prized, aggressive game fish found along the sandy shores of St. Thomas. Strong fighters with a distinct black lateral line running from gills to tail. They lurk in shadow lines and rocky inlets waiting for baitfish.',
+      description: 'A highly prized, aggressive, and delicious edible game fish found along the sandy shores of St. Thomas. Excellent for shore-to-table cooking, Snooks are strong fighters with a distinct black lateral line running from gills to tail.',
       image_url: '/assets/fish_snook.png'
     },
     {
@@ -87,13 +87,18 @@ export default async function FishSpeciesPage() {
               </div>
 
               {/* Bottom Decorative Tags */}
-              <div className="border-t border-[#00B5AD]/10 pt-4 flex gap-2">
+              <div className="border-t border-[#00B5AD]/10 pt-4 flex flex-wrap gap-2">
                 <span className="text-[10px] font-bold text-[#6B7A82] border border-[#6B7A82]/25 px-2.5 py-1 rounded-full uppercase">
                   Shoreline
                 </span>
                 <span className="text-[10px] font-bold text-[#00B5AD] border border-[#00B5AD]/25 px-2.5 py-1 rounded-full uppercase">
                   Game Fish
                 </span>
+                {(fish.name.toLowerCase().includes('snook') || fish.name.toLowerCase().includes('yellowtail')) && (
+                  <span className="text-[10px] font-bold text-[#FF4D4D] border border-[#FF4D4D]/25 px-2.5 py-1 rounded-full uppercase flex items-center gap-1">
+                    🍽️ Edible Fish
+                  </span>
+                )}
               </div>
             </div>
           </div>
