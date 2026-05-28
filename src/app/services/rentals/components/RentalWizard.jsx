@@ -1327,20 +1327,33 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
                   </span>
                   
                   {/* Official PayPal Checkout Container */}
-                  <div className="space-y-4 p-5 rounded-xl border border-[#00B5AD]/15 bg-[#001418]/60 text-center relative min-h-[120px] flex flex-col justify-center animate-[fadeIn_0.3s_ease-out]">
+                  <div className="bg-[#04282F] p-5 rounded-2xl border border-[#00B5AD]/20 shadow-lg mt-6">
+                    <div className="text-center mb-4">
+                      <span className="block text-[10px] font-black text-[#00B5AD] uppercase tracking-widest mb-1">
+                        Secure Payment Gateway
+                      </span>
+                    </div>
+                    
                     {paypalError ? (
-                      <span className="text-red-500 font-bold text-xs">{paypalError}</span>
+                      <div className="text-center p-3 bg-red-900/20 border border-red-500/30 rounded-lg">
+                        <span className="text-red-400 font-bold text-xs">{paypalError}</span>
+                      </div>
                     ) : !paypalLoaded ? (
-                      <div className="space-y-2 flex flex-col items-center">
-                        <div className="w-6 h-6 border-2 border-[#00B5AD] border-t-transparent rounded-full animate-spin" />
-                        <span className="text-xs text-[#A0ACB3] font-semibold">Loading secure PayPal portal...</span>
+                      <div className="flex justify-center items-center h-20">
+                        <div className="animate-pulse flex items-center space-x-2">
+                          <div className="w-4 h-4 bg-[#00B5AD]/50 rounded-full animate-bounce"></div>
+                          <span className="text-xs text-[#A0ACB3] font-semibold">Loading secure PayPal portal...</span>
+                        </div>
                       </div>
                     ) : (
-                      <div className="space-y-3">
-                        <span className="block text-xs text-[#A0ACB3] font-semibold mb-2">
-                          Authorize payment securely via official PayPal window below:
-                        </span>
-                        <div id="paypal-button-container" className="w-full max-w-sm mx-auto z-40 relative animate-[fadeIn_0.3s_ease-out]" />
+                      <div className="text-center space-y-3">
+                        {/* Wrapped paypal container in white background for dark text readability */}
+                        <div className="bg-white p-3 rounded-xl shadow-inner relative z-40 mx-auto w-full max-w-sm min-h-[150px]">
+                          <div id="paypal-button-container" className="w-full relative" />
+                        </div>
+                        <p className="text-[10px] font-semibold text-[#6B7A82] uppercase tracking-wide">
+                          Click the <span className="text-[#00B5AD]">PayPal</span> buttons above to complete your booking.
+                        </p>
                       </div>
                     )}
                   </div>
@@ -1493,6 +1506,11 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
                 <div className="flex justify-between text-[13px] font-black text-red-400 pt-1.5 border-t border-[#00B5AD]/10 pt-2 pb-1">
                   <span>Refundable Security Fee:</span>
                   <span>${securityDeposit.toFixed(2)}</span>
+                </div>
+
+                <div className="flex justify-between text-[15px] font-black text-[#00B5AD] pt-1.5 border-t border-[#00B5AD]/10 pt-2 pb-1">
+                  <span>TOTAL PRICE:</span>
+                  <span>${totalPrice.toFixed(2)}</span>
                 </div>
               </div>
             </div>
