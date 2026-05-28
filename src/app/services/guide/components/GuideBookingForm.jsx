@@ -9,7 +9,7 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
     hours: '2',
     guideName: 'First Available (Assign Best Expert)',
     startTime: '08:00 AM',
-    pickupLocation: 'Red Hook',
+    pickupLocation: '',
     referredBy: '',
     cardName: '',
     cardNumber: '',
@@ -302,7 +302,7 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
       <div className="space-y-1.5">
         <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider flex items-center gap-1">
           <MapPin className="w-3.5 h-3.5 text-[#00B5AD]" />
-          Pick-Up & Drop-Off Address
+          Pick-Up &amp; Drop-Off Address
         </label>
         <input
           type="text"
@@ -310,7 +310,7 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
           required
           value={formData.pickupLocation}
           onChange={handleChange}
-          placeholder="Red Hook (Default pick up & drop off point)"
+          placeholder="Enter your hotel, resort or address (e.g. Sapphire Beach Resort, Marriott, Red Hook)"
           className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] placeholder-[#3B4E5A] outline-none"
         />
         <span className="block text-[13px] text-[#00B5AD] font-extrabold tracking-wide mt-1">

@@ -1307,7 +1307,9 @@ export default function AdminDashboard({ session, initialData }) {
                           )}
                         </td>
                         <td className="px-4 py-3">
-                          <span className="block text-xs text-[#002830] max-w-[140px]">{b.pickup_address || <span className="text-[#6B7A82] italic">Not provided</span>}</span>
+                          <span className="block text-xs text-[#002830] max-w-[140px] truncate" title={b.guide_pickup_location || b.pickup_address}>
+                            {b.guide_pickup_location ? b.guide_pickup_location.split('| Pickup: ')[1] || b.guide_pickup_location : (b.pickup_address || <span className="text-[#6B7A82] italic">Not provided</span>)}
+                          </span>
                         </td>
                         <td className="px-4 py-3 text-[#00B5AD] font-black">
                           ${b.total_price}

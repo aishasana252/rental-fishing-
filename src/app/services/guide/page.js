@@ -17,7 +17,6 @@ export default async function GuidePage() {
   }
 
   const inclusions = [
-    'Direct Red Hook pickup & drop-off (free private harbor transit included)',
     'Personal transportation to St. Thomas hot shorelines',
     'Premium shore rod & loaded tacklebox gear included',
     'Ethical guidance & casting/rigging instruction',
