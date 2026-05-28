@@ -86,12 +86,21 @@ export default async function GuidePage() {
               <p className="text-sm text-[#A0ACB3] font-semibold leading-relaxed mb-6">
                 To provide the best possible experience, all guided charters are now booked alongside your gear rental. Click below to start your unified booking process.
               </p>
-              <Link
-                href="/services/rentals?reset=true"
-                className="inline-block bg-[#00B5AD] hover:bg-[#00A39E] text-[#FFFFFF] font-extrabold text-sm uppercase tracking-wider px-8 py-4 rounded-xl shadow-lg shadow-[#00B5AD]/20 transition-all hover:scale-105"
-              >
-                Start Gear & Charter Booking
-              </Link>
+              <div className="relative inline-block mt-4">
+                {/* Tooltip / Popup */}
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[#FFB52E] text-[#001418] text-xs font-black uppercase tracking-wider px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap animate-bounce z-10">
+                  Let's get your gear!
+                  {/* Arrow pointing down */}
+                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#FFB52E] rotate-45"></div>
+                </div>
+                
+                <Link
+                  href="/services/rentals?reset=true"
+                  className="inline-block bg-[#00B5AD] hover:bg-[#00A39E] text-[#FFFFFF] font-extrabold text-sm uppercase tracking-wider px-8 py-4 rounded-xl shadow-lg shadow-[#00B5AD]/20 transition-all hover:scale-105"
+                >
+                  Start Gear & Charter Booking
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="text-center py-12 px-4 space-y-6">
