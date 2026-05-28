@@ -406,8 +406,8 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
                 )}
               </div>
 
-              <p className="text-[13px] font-extrabold text-white flex items-center gap-1.5 pt-1 mt-1.5 leading-relaxed">
-                <Info className="w-4 h-4 text-[#00B5AD] flex-shrink-0" />
+              <p className="text-[13px] font-extrabold text-[#FF4D4D] flex items-center gap-1.5 pt-1 mt-1.5 leading-relaxed">
+                <Info className="w-4 h-4 text-[#FF4D4D] flex-shrink-0" />
                 *Each fishing pole automatically includes a deluxe tacklebox and heavy-duty 30 lb test fishing line.
               </p>
             </div>
