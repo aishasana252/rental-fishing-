@@ -108,8 +108,6 @@ export default function Footer() {
         <div className="mt-16 pt-8 border-t border-[#00B5AD]/5 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-semibold text-[#FFFFFF]">
           <p>© {currentYear} Reel Problems Shore Fishing. All rights reserved.</p>
           <div className="flex gap-4">
-            <Link href="/services/rentals" className="hover:text-[#00B5AD] transition-colors">Damage Policies</Link>
-            <span>•</span>
             <Link href="/contact" className="hover:text-[#00B5AD] transition-colors">Support Portal</Link>
           </div>
         </div>
