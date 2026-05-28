@@ -68,160 +68,6 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
   const [paypalError, setPaypalError] = useState(null);
   const [referredBy, setReferredBy] = useState('');
 
-  // --- LOCALSTORAGE PERSISTENCE ---
-  // Load state on mount to prevent Next.js hydration mismatch
-  React.useEffect(() => {
-    const savedStep = localStorage.getItem('rental_step');
-    if (savedStep) setStep(parseInt(savedStep, 10));
-
-    const savedDuration = localStorage.getItem('rental_duration');
-    if (savedDuration) setDuration(savedDuration);
-
-    const savedPoles = localStorage.getItem('rental_poles');
-    if (savedPoles) setPoles(parseInt(savedPoles, 10));
-
-    const savedDamageAgreed = localStorage.getItem('rental_damage_agreed');
-    if (savedDamageAgreed) setDamageAgreed(savedDamageAgreed === 'true');
-
-    const savedRentalDate = localStorage.getItem('rental_date');
-    if (savedRentalDate) setRentalDate(savedRentalDate);
-
-    const savedChildPoles = localStorage.getItem('rental_child_poles');
-    if (savedChildPoles) setChildPoles(parseInt(savedChildPoles, 10));
-
-    const savedChildRentalDate = localStorage.getItem('rental_child_date');
-    if (savedChildRentalDate) setChildRentalDate(savedChildRentalDate);
-
-    const savedReferredBy = localStorage.getItem('rental_referred_by');
-    if (savedReferredBy) setReferredBy(savedReferredBy);
-
-    const savedLures = localStorage.getItem('rental_lures');
-    if (savedLures) {
-      try {
-        const parsedLures = JSON.parse(savedLures);
-        setLures((current) =>
-          current.map((item) => {
-            const savedItem = parsedLures.find((p) => p.id === item.id);
-            return savedItem ? { ...item, quantity: savedItem.quantity } : item;
-          })
-        );
-      } catch (e) {
-        console.error('Failed to restore saved lures:', e);
-      }
-    }
-  }, []);
-
-  // Save states to localStorage when changed
-  React.useEffect(() => {
-    localStorage.setItem('rental_step', step.toString());
-  }, [step]);
-
-  React.useEffect(() => {
-    localStorage.setItem('rental_duration', duration);
-  }, [duration]);
-
-  React.useEffect(() => {
-    localStorage.setItem('rental_poles', poles.toString());
-  }, [poles]);
-
-  React.useEffect(() => {
-    localStorage.setItem('rental_damage_agreed', damageAgreed.toString());
-  }, [damageAgreed]);
-
-  React.useEffect(() => {
-    localStorage.setItem('rental_date', rentalDate);
-  }, [rentalDate]);
-
-  React.useEffect(() => {
-    localStorage.setItem('rental_child_poles', childPoles.toString());
-  }, [childPoles]);
-
-  React.useEffect(() => {
-    localStorage.setItem('rental_child_date', childRentalDate);
-  }, [childRentalDate]);
-
-  React.useEffect(() => {
-    localStorage.setItem('rental_lures', JSON.stringify(lures.map((l) => ({ id: l.id, quantity: l.quantity }))));
-  }, [lures]);
-
-  React.useEffect(() => {
-    localStorage.setItem('rental_referred_by', referredBy);
-  }, [referredBy]);
-
-  // Dynamic PayPal SDK Loader
-  React.useEffect(() => {
-    if (step !== 4 || paymentMethod !== 'paypal') return;
-
-    if (window.paypal) {
-      setPaypalLoaded(true);
-      return;
-    }
-
-    const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
-    if (!clientId) {
-      setPaypalError('PayPal Client ID is not configured.');
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD`;
-    script.async = true;
-    script.onload = () => setPaypalLoaded(true);
-    script.onerror = () => setPaypalError('Failed to load PayPal SDK.');
-    document.body.appendChild(script);
-  }, [paymentMethod, step]);
-
-  // PayPal Buttons Render Effect
-  React.useEffect(() => {
-    if (!paypalLoaded || paymentMethod !== 'paypal' || step !== 4) return;
-
-    const container = document.getElementById('paypal-button-container');
-    if (!container) return;
-
-    // Clean previous buttons if any to avoid duplicate button rendering
-    container.innerHTML = '';
-
-    try {
-      window.paypal.Buttons({
-        createOrder: (data, actions) => {
-          return actions.order.create({
-            purchase_units: [{
-              amount: {
-                value: totalPrice.toFixed(2)
-              },
-              description: `Fishing Gear Rental: ${poles} Adult Pole(s), ${childPoles} Children Pole(s), ${durationDays} Day(s)`
-            }]
-          });
-        },
-        onApprove: async (data, actions) => {
-          setSubmitting(true);
-          try {
-            const details = await actions.order.capture();
-            const orderId = details.id;
-            // Complete booking via API
-            await completePayPalBooking(orderId);
-          } catch (err) {
-            console.error('PayPal capture error:', err);
-            setStatusMsg({ type: 'error', text: 'PayPal capture failed. Please contact support.' });
-            setSubmitting(false);
-          }
-        },
-        onError: (err) => {
-          console.error('PayPal payment error:', err);
-          setStatusMsg({ type: 'error', text: 'PayPal transaction failed. Please try again.' });
-        },
-        style: {
-          color: 'gold',
-          shape: 'rect',
-          label: 'paypal',
-          height: 45
-        }
-      }).render('#paypal-button-container');
-    } catch (e) {
-      console.error('Failed to render PayPal Buttons:', e);
-    }
-  }, [paypalLoaded, paymentMethod, step, totalPrice, poles, childPoles, durationDays]);
-
   // --- CALCULATION LOGIC ---
   const durationDays = parseInt(duration);
   // Gear base rate based on new pricing models: 1 day = $75, 3 days = $150, 5 days = $250 flat per pole
@@ -467,6 +313,162 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
       setSubmitting(false);
     }
   };
+
+  // --- LOCALSTORAGE PERSISTENCE ---
+  // Load state on mount to prevent Next.js hydration mismatch
+  React.useEffect(() => {
+    const savedStep = localStorage.getItem('rental_step');
+    if (savedStep) setStep(parseInt(savedStep, 10));
+
+    const savedDuration = localStorage.getItem('rental_duration');
+    if (savedDuration) setDuration(savedDuration);
+
+    const savedPoles = localStorage.getItem('rental_poles');
+    if (savedPoles) setPoles(parseInt(savedPoles, 10));
+
+    const savedDamageAgreed = localStorage.getItem('rental_damage_agreed');
+    if (savedDamageAgreed) setDamageAgreed(savedDamageAgreed === 'true');
+
+    const savedRentalDate = localStorage.getItem('rental_date');
+    if (savedRentalDate) setRentalDate(savedRentalDate);
+
+    const savedChildPoles = localStorage.getItem('rental_child_poles');
+    if (savedChildPoles) setChildPoles(parseInt(savedChildPoles, 10));
+
+    const savedChildRentalDate = localStorage.getItem('rental_child_date');
+    if (savedChildRentalDate) setChildRentalDate(savedChildRentalDate);
+
+    const savedReferredBy = localStorage.getItem('rental_referred_by');
+    if (savedReferredBy) setReferredBy(savedReferredBy);
+
+    const savedLures = localStorage.getItem('rental_lures');
+    if (savedLures) {
+      try {
+        const parsedLures = JSON.parse(savedLures);
+        setLures((current) =>
+          current.map((item) => {
+            const savedItem = parsedLures.find((p) => p.id === item.id);
+            return savedItem ? { ...item, quantity: savedItem.quantity } : item;
+          })
+        );
+      } catch (e) {
+        console.error('Failed to restore saved lures:', e);
+      }
+    }
+  }, []);
+
+  // Save states to localStorage when changed
+  React.useEffect(() => {
+    localStorage.setItem('rental_step', step.toString());
+  }, [step]);
+
+  React.useEffect(() => {
+    localStorage.setItem('rental_duration', duration);
+  }, [duration]);
+
+  React.useEffect(() => {
+    localStorage.setItem('rental_poles', poles.toString());
+  }, [poles]);
+
+  React.useEffect(() => {
+    localStorage.setItem('rental_damage_agreed', damageAgreed.toString());
+  }, [damageAgreed]);
+
+  React.useEffect(() => {
+    localStorage.setItem('rental_date', rentalDate);
+  }, [rentalDate]);
+
+  React.useEffect(() => {
+    localStorage.setItem('rental_child_poles', childPoles.toString());
+  }, [childPoles]);
+
+  React.useEffect(() => {
+    localStorage.setItem('rental_child_date', childRentalDate);
+  }, [childRentalDate]);
+
+  React.useEffect(() => {
+    localStorage.setItem('rental_lures', JSON.stringify(lures.map((l) => ({ id: l.id, quantity: l.quantity }))));
+  }, [lures]);
+
+  React.useEffect(() => {
+    localStorage.setItem('rental_referred_by', referredBy);
+  }, [referredBy]);
+
+  // Dynamic PayPal SDK Loader
+  React.useEffect(() => {
+    if (step !== 4 || paymentMethod !== 'paypal') return;
+
+    if (window.paypal) {
+      setPaypalLoaded(true);
+      return;
+    }
+
+    const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+    if (!clientId) {
+      setPaypalError('PayPal Client ID is not configured.');
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD`;
+    script.async = true;
+    script.onload = () => setPaypalLoaded(true);
+    script.onerror = () => setPaypalError('Failed to load PayPal SDK.');
+    document.body.appendChild(script);
+  }, [paymentMethod, step]);
+
+  // PayPal Buttons Render Effect
+  React.useEffect(() => {
+    if (!paypalLoaded || paymentMethod !== 'paypal' || step !== 4) return;
+
+    const container = document.getElementById('paypal-button-container');
+    if (!container) return;
+
+    // Clean previous buttons if any to avoid duplicate button rendering
+    container.innerHTML = '';
+
+    try {
+      window.paypal.Buttons({
+        createOrder: (data, actions) => {
+          return actions.order.create({
+            purchase_units: [{
+              amount: {
+                value: totalPrice.toFixed(2)
+              },
+              description: `Fishing Gear Rental: ${poles} Adult Pole(s), ${childPoles} Children Pole(s), ${durationDays} Day(s)`
+            }]
+          });
+        },
+        onApprove: async (data, actions) => {
+          setSubmitting(true);
+          try {
+            const details = await actions.order.capture();
+            const orderId = details.id;
+            // Complete booking via API
+            await completePayPalBooking(orderId);
+          } catch (err) {
+            console.error('PayPal capture error:', err);
+            setStatusMsg({ type: 'error', text: 'PayPal capture failed. Please contact support.' });
+            setSubmitting(false);
+          }
+        },
+        onError: (err) => {
+          console.error('PayPal payment error:', err);
+          setStatusMsg({ type: 'error', text: 'PayPal transaction failed. Please try again.' });
+        },
+        style: {
+          color: 'gold',
+          shape: 'rect',
+          label: 'paypal',
+          height: 45
+        }
+      }).render('#paypal-button-container');
+    } catch (e) {
+      console.error('Failed to render PayPal Buttons:', e);
+    }
+  }, [paypalLoaded, paymentMethod, step, totalPrice, poles, childPoles, durationDays]);
+
+
 
   return (
     <div className="space-y-10">
