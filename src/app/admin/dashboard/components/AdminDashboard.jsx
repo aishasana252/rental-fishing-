@@ -3096,14 +3096,47 @@ export default function AdminDashboard({ session, initialData }) {
               
               {!selectedBooking.guide_booked ? (
                 <>
+                  {selectedBooking.rental_date && (
+                    <div className="py-2.5 flex justify-between">
+                      <span>Adult Rental Period:</span>
+                      <span className="text-[#FFFFFF]">
+                        {new Date(selectedBooking.rental_date).toLocaleDateString()} to {
+                          (() => {
+                            const d = new Date(selectedBooking.rental_date);
+                            d.setDate(d.getDate() + (selectedBooking.rental_duration || 3) - 1);
+                            return d.toLocaleDateString();
+                          })()
+                        } ({selectedBooking.rental_duration} Days)
+                      </span>
+                    </div>
+                  )}
                   <div className="py-2.5 flex justify-between">
-                    <span>Rental Duration:</span>
-                    <span className="text-[#FFFFFF]">{selectedBooking.rental_duration} Days</span>
+                    <span>Adult Poles:</span>
+                    <span className="text-[#FFFFFF]">{selectedBooking.pole_quantity || 0} Poles Bundle</span>
                   </div>
-                  <div className="py-2.5 flex justify-between">
-                    <span>Pole Quantity:</span>
-                    <span className="text-[#FFFFFF]">{selectedBooking.pole_quantity} Poles Bundle</span>
-                  </div>
+
+                  {selectedBooking.child_pole_quantity > 0 && (
+                    <>
+                      {selectedBooking.child_pole_date && (
+                        <div className="py-2.5 flex justify-between border-t border-[#00B5AD]/5">
+                          <span>Children Rental Period:</span>
+                          <span className="text-[#FFFFFF]">
+                            {new Date(selectedBooking.child_pole_date).toLocaleDateString()} to {
+                              (() => {
+                                const d = new Date(selectedBooking.child_pole_date);
+                                d.setDate(d.getDate() + 4);
+                                return d.toLocaleDateString();
+                              })()
+                            } (5 Day Limit)
+                          </span>
+                        </div>
+                      )}
+                      <div className="py-2.5 flex justify-between">
+                        <span>Children Poles:</span>
+                        <span className="text-[#FFFFFF]">{selectedBooking.child_pole_quantity} Poles Bundle</span>
+                      </div>
+                    </>
+                  )}
                 </>
               ) : (
                 <>

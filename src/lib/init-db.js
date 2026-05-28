@@ -42,6 +42,9 @@ export async function initDatabase() {
         security_added DECIMAL(10, 2) DEFAULT 0.00,
         security_deducted DECIMAL(10, 2) DEFAULT 0.00,
         security_released DECIMAL(10, 2) DEFAULT 0.00,
+        rental_date DATE,
+        child_pole_quantity INT DEFAULT 0,
+        child_pole_date DATE,
         payment_status VARCHAR(50) DEFAULT 'pending',
         status VARCHAR(50) DEFAULT 'pending',
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP

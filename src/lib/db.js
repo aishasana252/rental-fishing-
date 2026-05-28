@@ -293,23 +293,29 @@ function handleMockQuery(text, params = []) {
       total_price,
       security_added,
       payment_status,
-      status
+      status,
+      rental_date,
+      child_pole_quantity,
+      child_pole_date
     ] = params;
 
     const newBooking = {
       id: crypto.randomUUID(),
       user_id,
-      rental_duration: parseInt(rental_duration),
-      pole_quantity: parseInt(pole_quantity),
+      rental_duration: rental_duration ? parseInt(rental_duration) : null,
+      pole_quantity: pole_quantity ? parseInt(pole_quantity) : null,
       guide_booked: !!guide_booked,
       guide_hours: guide_hours ? parseInt(guide_hours) : null,
       guide_date: guide_date || null,
       guide_pickup_location: guide_pickup_location || null,
       damage_agreement: !!damage_agreement,
       total_price: parseFloat(total_price),
-      security_added: parseFloat(security_added),
+      security_added: security_added ? parseFloat(security_added) : 0.00,
       security_deducted: 0.00,
       security_released: 0.00,
+      rental_date: rental_date || null,
+      child_pole_quantity: child_pole_quantity ? parseInt(child_pole_quantity) : 0,
+      child_pole_date: child_pole_date || null,
       payment_status: payment_status || 'pending',
       status: status || 'pending',
       created_at: new Date().toISOString()

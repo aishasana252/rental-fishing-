@@ -22,6 +22,9 @@ export async function POST(request) {
       security_added,
       payment_status,
       status,
+      rental_date,
+      child_pole_quantity,
+      child_pole_date,
       selectedLures // Expect [{ id, name, price, quantity }] for rentals
     } = body;
 
@@ -30,8 +33,9 @@ export async function POST(request) {
       `INSERT INTO bookings (
         user_id, rental_duration, pole_quantity, 
         guide_booked, guide_hours, guide_date, guide_pickup_location, 
-        damage_agreement, total_price, security_added, payment_status, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *;`,
+        damage_agreement, total_price, security_added, payment_status, status,
+        rental_date, child_pole_quantity, child_pole_date
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *;`,
       [
         session.id,
         rental_duration ? parseInt(rental_duration) : null,
@@ -44,7 +48,10 @@ export async function POST(request) {
         parseFloat(total_price),
         security_added ? parseFloat(security_added) : 0.00,
         payment_status || 'pending',
-        status || 'pending'
+        status || 'pending',
+        rental_date || null,
+        child_pole_quantity ? parseInt(child_pole_quantity) : 0,
+        child_pole_date || null
       ]
     );
 
@@ -70,19 +77,22 @@ export async function POST(request) {
       }
     }
 
-    // 3. Deduct Fishing Poles and associated gear from available inventory
-    if (pole_quantity && parseInt(pole_quantity) > 0) {
-      const qty = parseInt(pole_quantity);
+    // 3. Deduct Fishing Poles and associated gear from available inventory (Adult + Child)
+    const adultQty = pole_quantity ? parseInt(pole_quantity) : 0;
+    const childQty = child_pole_quantity ? parseInt(child_pole_quantity) : 0;
+    const totalPolesQty = adultQty + childQty;
+
+    if (totalPolesQty > 0) {
       // Deduct Fishing Poles
       await query(
         `UPDATE inventory SET available_qty = available_qty - $1 WHERE item_name = 'Fishing Poles';`,
-        [qty]
+        [totalPolesQty]
       );
       
       // Deduct associated gear per pole
       await query(
         `UPDATE inventory SET available_qty = available_qty - $1 WHERE item_name IN ('Tackleboxes', 'Pliers', 'Weights (pack)');`,
-        [qty]
+        [totalPolesQty]
       );
     }
 

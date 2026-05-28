@@ -12,6 +12,9 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
   // STEP 1 STATE: Gear Selection
   const [duration, setDuration] = useState('3'); // '1', '3', '5' days
   const [poles, setPoles] = useState(1); // 1 to 5 poles
+  const [rentalDate, setRentalDate] = useState(''); // adult rental start date
+  const [childPoles, setChildPoles] = useState(0); // 0 to 5 children poles
+  const [childRentalDate, setChildRentalDate] = useState(''); // child rental start date
 
   // STEP 2 STATE: Lures Add-ons (loaded dynamically from database/props)
   const [lures, setLures] = useState(() => {
@@ -75,6 +78,15 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
     const savedDamageAgreed = localStorage.getItem('rental_damage_agreed');
     if (savedDamageAgreed) setDamageAgreed(savedDamageAgreed === 'true');
 
+    const savedRentalDate = localStorage.getItem('rental_date');
+    if (savedRentalDate) setRentalDate(savedRentalDate);
+
+    const savedChildPoles = localStorage.getItem('rental_child_poles');
+    if (savedChildPoles) setChildPoles(parseInt(savedChildPoles, 10));
+
+    const savedChildRentalDate = localStorage.getItem('rental_child_date');
+    if (savedChildRentalDate) setChildRentalDate(savedChildRentalDate);
+
     const savedLures = localStorage.getItem('rental_lures');
     if (savedLures) {
       try {
@@ -109,14 +121,39 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
   }, [damageAgreed]);
 
   React.useEffect(() => {
+    localStorage.setItem('rental_date', rentalDate);
+  }, [rentalDate]);
+
+  React.useEffect(() => {
+    localStorage.setItem('rental_child_poles', childPoles.toString());
+  }, [childPoles]);
+
+  React.useEffect(() => {
+    localStorage.setItem('rental_child_date', childRentalDate);
+  }, [childRentalDate]);
+
+  React.useEffect(() => {
     localStorage.setItem('rental_lures', JSON.stringify(lures.map((l) => ({ id: l.id, quantity: l.quantity }))));
   }, [lures]);
 
   // --- CALCULATION LOGIC ---
   const durationDays = parseInt(duration);
-  // Gear base rate: $25 per pole per day
-  const basePoleRate = 25;
-  const gearPrice = poles * basePoleRate * durationDays;
+  // Gear base rate based on new pricing models: 1 day = $75, 3 days = $150, 5 days = $250 flat per pole
+  const getAdultBaseRate = (dur) => {
+    if (dur === '1') return 75;
+    if (dur === '3') return 150;
+    if (dur === '5') return 250;
+    return 75;
+  };
+  const adultBaseRate = getAdultBaseRate(duration);
+  const gearPrice = poles * adultBaseRate;
+
+  // Children's pole price ($35 one-time/flat fee)
+  const childPoleRate = 35;
+  const childPolesPrice = childPoles * childPoleRate;
+
+  // Total gear rental price
+  const totalGearPrice = gearPrice + childPolesPrice;
 
   // Lures Total
   const luresPrice = lures.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -125,7 +162,7 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
   const securityDeposit = policiesList.reduce((sum, policy) => sum + parseFloat(policy.price), 0);
 
   // Total Excursion Booking Price
-  const totalPrice = gearPrice + luresPrice + securityDeposit;
+  const totalPrice = totalGearPrice + luresPrice + securityDeposit;
 
   // --- QUANTITY HANDLERS ---
   const handleLureQty = (id, change) => {
@@ -146,6 +183,14 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
 
   // --- ACTION NAVIGATION ---
   const nextStep = () => {
+    if (step === 1 && !rentalDate) {
+      alert('Please select an adult gear rental start date on the calendar.');
+      return;
+    }
+    if (step === 1 && childPoles > 0 && !childRentalDate) {
+      alert("Please select a rental start date for the children's fishing poles on the calendar.");
+      return;
+    }
     if (step === 3 && !damageAgreed) {
       alert('You must accept the damage policy before proceeding to checkout.');
       return;
@@ -164,6 +209,18 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
 
     if (!session) {
       setStatusMsg({ type: 'error', text: 'You must have a logged-in account to complete transactions.' });
+      setSubmitting(false);
+      return;
+    }
+
+    if (!rentalDate) {
+      setStatusMsg({ type: 'error', text: 'Please select an adult gear rental start date.' });
+      setSubmitting(false);
+      return;
+    }
+
+    if (childPoles > 0 && !childRentalDate) {
+      setStatusMsg({ type: 'error', text: "Please select a rental start date for the children's fishing poles." });
       setSubmitting(false);
       return;
     }
@@ -187,6 +244,9 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
         security_added: securityDeposit,
         payment_status: 'paid', // Auto-authorized simulated credit card
         status: 'confirmed',
+        rental_date: rentalDate,
+        child_pole_quantity: childPoles,
+        child_pole_date: childRentalDate || null,
         selectedLures
       };
 
@@ -206,6 +266,9 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
       localStorage.removeItem('rental_poles');
       localStorage.removeItem('rental_damage_agreed');
       localStorage.removeItem('rental_lures');
+      localStorage.removeItem('rental_date');
+      localStorage.removeItem('rental_child_poles');
+      localStorage.removeItem('rental_child_date');
 
       setStatusMsg({
         type: 'success',
@@ -226,6 +289,12 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
 
   return (
     <div className="space-y-10">
+      <style>{`
+        input[type="date"]::-webkit-calendar-picker-indicator {
+          filter: invert(1) !important;
+          cursor: pointer;
+        }
+      `}</style>
       
       {/* 1. VISUAL STEP INDICATOR */}
       <div className="flex justify-between items-center max-w-xl mx-auto border-b border-[#00B5AD]/10 pb-6">
@@ -247,7 +316,7 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
                 step === num ? 'text-[#00B5AD]' : 'text-[#6B7A82]'
               }`}
             >
-              {num === 1 ? 'Select' : num === 2 ? 'Lures' : num === 3 ? 'Policy' : 'Pay'}
+              {num === 1 ? 'Rental' : num === 2 ? 'Lures' : num === 3 ? 'Policy' : 'Pay'}
             </span>
             {num < 4 && <div className="h-0.5 w-8 bg-[#3B4E5A]/20 hidden sm:block" />}
           </div>
@@ -264,13 +333,13 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
             {/* Toggle Duration */}
             <div className="space-y-3">
               <h3 className="text-lg font-bold uppercase tracking-wider font-['Outfit',sans-serif] text-[#FFFFFF]">
-                1. Select Rental Duration
+                1. Select Rental
               </h3>
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { value: '1', label: '1 Day', desc: 'Standard Day' },
-                  { value: '3', label: '3 Days', desc: 'Save 10%' },
-                  { value: '5', label: '5 Days', desc: 'Save 20%' }
+                  { value: '1', label: '1 Day', desc: '$75 total / pole' },
+                  { value: '3', label: '3 Days', desc: '$150 total / pole' },
+                  { value: '5', label: '5 Days', desc: '$250 total / pole' }
                 ].map((item) => (
                   <button
                     key={item.value}
@@ -310,10 +379,96 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
                   </button>
                 ))}
               </div>
-              <p className="text-[11px] font-semibold text-[#6B7A82] flex items-center gap-1.5 pt-1">
-                <Info className="w-3.5 h-3.5 text-[#00B5AD]" />
+              
+              {/* Rental Date Picker for Adult rentals */}
+              <div className="space-y-2 p-4 rounded-xl border border-[#00B5AD]/15 bg-[#001418]/60 mt-3">
+                <label className="block text-xs font-bold text-[#A0ACB3] uppercase tracking-wider">
+                  Select Rental Start Date
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={rentalDate}
+                  min={new Date().toISOString().split('T')[0]}
+                  onChange={(e) => setRentalDate(e.target.value)}
+                  className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-white outline-none"
+                />
+                {rentalDate && (
+                  <p className="text-[11px] font-bold text-[#00B5AD] mt-1 leading-none">
+                    Rental Period: {new Date(rentalDate).toLocaleDateString()} to {
+                      (() => {
+                        const d = new Date(rentalDate);
+                        d.setDate(d.getDate() + durationDays - 1);
+                        return d.toLocaleDateString();
+                      })()
+                    } ({durationDays} {durationDays === 1 ? 'Day' : 'Days'})
+                  </p>
+                )}
+              </div>
+
+              <p className="text-[13px] font-extrabold text-white flex items-center gap-1.5 pt-1 mt-1.5 leading-relaxed">
+                <Info className="w-4 h-4 text-[#00B5AD] flex-shrink-0" />
                 *Each fishing pole automatically includes a deluxe tacklebox and heavy-duty 30 lb test fishing line.
               </p>
+            </div>
+
+            {/* Children's Fishing Pole Add-on Option */}
+            <div className="space-y-4 p-5 rounded-xl border border-[#00B5AD]/15 bg-[#04282F]/20">
+              <h3 className="text-sm font-bold uppercase tracking-wider font-['Outfit',sans-serif] text-white flex items-center gap-2">
+                Children's Fishing Pole Add-on
+              </h3>
+              <p className="text-xs text-[#A0ACB3] font-semibold leading-relaxed">
+                Add premium children's fishing poles for just <span className="text-[#00B5AD] font-bold">$35 flat one-time fee</span>. Maximum 5-day rental limit!
+              </p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                {/* Quantity Toggle */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-black text-[#6B7A82] uppercase tracking-wider">
+                    Quantity (Children Poles)
+                  </label>
+                  <select
+                    value={childPoles}
+                    onChange={(e) => setChildPoles(parseInt(e.target.value))}
+                    className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-3 py-2.5 text-xs text-white outline-none"
+                  >
+                    <option value={0}>0 Poles (None)</option>
+                    <option value={1}>1 Children Pole ($35)</option>
+                    <option value={2}>2 Children Poles ($70)</option>
+                    <option value={3}>3 Children Poles ($105)</option>
+                    <option value={4}>4 Children Poles ($140)</option>
+                    <option value={5}>5 Children Poles ($175)</option>
+                  </select>
+                </div>
+
+                {/* Calendar Date for Children Poles */}
+                {childPoles > 0 && (
+                  <div className="space-y-1.5 animate-[fadeIn_0.3s_ease-out]">
+                    <label className="block text-[10px] font-black text-[#6B7A82] uppercase tracking-wider">
+                      Select Start Date
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={childRentalDate}
+                      min={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => setChildRentalDate(e.target.value)}
+                      className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-3 py-2 text-white outline-none"
+                    />
+                    {childRentalDate && (
+                      <p className="text-[9px] font-bold text-[#00B5AD] leading-none mt-1">
+                        Rental Period: {new Date(childRentalDate).toLocaleDateString()} to {
+                          (() => {
+                            const d = new Date(childRentalDate);
+                            d.setDate(d.getDate() + 4); // 5-day limit means start + 4 days
+                            return d.toLocaleDateString();
+                          })()
+                        } (5 Day Limit)
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Tacklebox Inclusions */}
@@ -346,26 +501,63 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
               <h4 className="text-[#FFFFFF] text-sm font-bold uppercase tracking-wider border-b border-[#00B5AD]/15 pb-2">
                 Booking Details
               </h4>
-              <div className="space-y-2.5 text-xs font-semibold text-[#A0ACB3]">
-                <div className="flex justify-between">
-                  <span>Duration selected:</span>
-                  <span className="text-[#FFFFFF]">{durationDays} {durationDays === 1 ? 'Day' : 'Days'}</span>
+              <div className="space-y-3.5 text-xs font-semibold text-[#A0ACB3]">
+                <div className="space-y-1">
+                  <div className="flex justify-between">
+                    <span>Adult duration:</span>
+                    <span className="text-[#FFFFFF]">{durationDays} {durationDays === 1 ? 'Day' : 'Days'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Adult poles quantity:</span>
+                    <span className="text-[#FFFFFF]">{poles} {poles === 1 ? 'Pole' : 'Poles'}</span>
+                  </div>
+                  {rentalDate && (
+                    <div className="text-[10px] text-[#00B5AD] text-right font-bold">
+                      [{new Date(rentalDate).toLocaleDateString()} to {
+                        (() => {
+                          const d = new Date(rentalDate);
+                          d.setDate(d.getDate() + durationDays - 1);
+                          return d.toLocaleDateString();
+                        })()
+                      }]
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span>Adult package price:</span>
+                    <span className="text-[#FFFFFF]">${gearPrice}.00</span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span>Poles package:</span>
-                  <span className="text-[#FFFFFF]">{poles} {poles === 1 ? 'Pole Bundle' : 'Poles Bundle'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Price per pole / day:</span>
-                  <span className="text-[#FFFFFF]">${basePoleRate}.00</span>
-                </div>
+
+                {childPoles > 0 && (
+                  <div className="space-y-1 border-t border-[#00B5AD]/10 pt-2">
+                    <div className="flex justify-between">
+                      <span>Children poles quantity:</span>
+                      <span className="text-[#FFFFFF]">{childPoles} {childPoles === 1 ? 'Pole' : 'Poles'}</span>
+                    </div>
+                    {childRentalDate && (
+                      <div className="text-[10px] text-[#00B5AD] text-right font-bold">
+                        [{new Date(childRentalDate).toLocaleDateString()} to {
+                          (() => {
+                            const d = new Date(childRentalDate);
+                            d.setDate(d.getDate() + 4);
+                            return d.toLocaleDateString();
+                          })()
+                        }]
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span>Children package price:</span>
+                      <span className="text-[#FFFFFF]">${childPolesPrice}.00</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="border-t border-[#00B5AD]/10 pt-6 mt-6 space-y-4">
               <div className="flex justify-between items-baseline">
                 <span className="text-xs font-bold text-[#6B7A82] uppercase">Package Price</span>
-                <span className="text-2xl font-black text-[#00B5AD] font-['Outfit']">${gearPrice}.00</span>
+                <span className="text-2xl font-black text-[#00B5AD] font-['Outfit']">${totalGearPrice}.00</span>
               </div>
               <button
                 type="button"
@@ -759,22 +951,63 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
 
               {/* Items Summary list */}
               <div className="space-y-3.5 text-xs font-semibold text-[#A0ACB3]">
-                <div className="flex justify-between">
-                  <span>Duration:</span>
-                  <span className="text-[#FFFFFF]">{durationDays} Days</span>
+                {/* Adult Rental Summary */}
+                <div className="space-y-1">
+                  <span className="block text-[9px] font-bold text-[#6B7A82] uppercase tracking-wider">Adult Gear Rental</span>
+                  <div className="flex justify-between">
+                    <span>Duration:</span>
+                    <span className="text-[#FFFFFF]">{durationDays} Days</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Quantity:</span>
+                    <span className="text-[#FFFFFF]">{poles} {poles === 1 ? 'Pole' : 'Poles'}</span>
+                  </div>
+                  {rentalDate && (
+                    <div className="text-[10px] text-[#00B5AD] font-bold">
+                      [{new Date(rentalDate).toLocaleDateString()} to {
+                        (() => {
+                          const d = new Date(rentalDate);
+                          d.setDate(d.getDate() + durationDays - 1);
+                          return d.toLocaleDateString();
+                        })()
+                      }]
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span>Adult Price:</span>
+                    <span className="text-[#FFFFFF]">${gearPrice}.00</span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span>Quantity:</span>
-                  <span className="text-[#FFFFFF]">{poles} {poles === 1 ? 'Pole Bundle' : 'Poles Bundle'}</span>
-                </div>
-                <div className="flex justify-between border-b border-[#00B5AD]/10 pb-2.5">
-                  <span>Base Gear Rental:</span>
-                  <span className="text-[#FFFFFF]">${gearPrice}.00</span>
-                </div>
+
+                {/* Children Pole Summary */}
+                {childPoles > 0 && (
+                  <div className="space-y-1 border-t border-[#00B5AD]/10 pt-2">
+                    <span className="block text-[9px] font-bold text-[#6B7A82] uppercase tracking-wider">Children Gear Rental</span>
+                    <div className="flex justify-between">
+                      <span>Quantity:</span>
+                      <span className="text-[#FFFFFF]">{childPoles} {childPoles === 1 ? 'Pole' : 'Poles'}</span>
+                    </div>
+                    {childRentalDate && (
+                      <div className="text-[10px] text-[#00B5AD] font-bold">
+                        [{new Date(childRentalDate).toLocaleDateString()} to {
+                          (() => {
+                            const d = new Date(childRentalDate);
+                            d.setDate(d.getDate() + 4);
+                            return d.toLocaleDateString();
+                          })()
+                        }]
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span>Children Price:</span>
+                      <span className="text-[#FFFFFF]">${childPolesPrice}.00</span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Show lures list if any */}
                 {lures.some((l) => l.quantity > 0) && (
-                  <div className="space-y-2 border-b border-[#00B5AD]/10 pb-2.5">
+                  <div className="space-y-2 border-t border-[#00B5AD]/10 pt-2 pb-1">
                     <span className="block text-[9px] font-bold text-[#6B7A82] uppercase tracking-wider">Lure Add-ons</span>
                     {lures
                       .filter((l) => l.quantity > 0)
@@ -787,12 +1020,12 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
                   </div>
                 )}
 
-                <div className="flex justify-between text-xs font-bold pt-1.5">
+                <div className="flex justify-between text-xs font-bold pt-1.5 border-t border-[#00B5AD]/10 pt-2">
                   <span>Damage Agreement:</span>
                   <span className="text-[#00B5AD] uppercase text-[10px]">Acknowledge Signed</span>
                 </div>
 
-                <div className="flex justify-between text-xs font-bold pt-1.5 border-t border-[#00B5AD]/10 mt-2 pt-2">
+                <div className="flex justify-between text-xs font-bold pt-1.5 border-t border-[#00B5AD]/10 pt-2">
                   <span>Refundable Security Fee:</span>
                   <span className="text-[#00B5AD]">${securityDeposit.toFixed(2)}</span>
                 </div>
