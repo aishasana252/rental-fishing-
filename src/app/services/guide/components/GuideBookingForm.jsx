@@ -10,6 +10,7 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
     guideName: 'First Available (Assign Best Expert)',
     startTime: '08:00 AM',
     pickupLocation: '',
+    dropoffLocation: '',
     referredBy: '',
     cardName: '',
     cardNumber: '',
@@ -82,8 +83,8 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return actions.reject();
           }
-          if (!formData.pickupLocation.trim()) {
-            setStatus({ type: 'error', text: 'Please specify a pickup location.' });
+          if (!formData.pickupLocation.trim() || !formData.dropoffLocation.trim()) {
+            setStatus({ type: 'error', text: 'Please specify both pick up and drop off addresses.' });
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return actions.reject();
           }
@@ -137,7 +138,7 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
         guide_booked: true,
         guide_hours: parseInt(formData.hours),
         guide_date: formData.date,
-        guide_pickup_location: `Guide: ${formData.guideName} | Time: ${formData.startTime} | Pickup: ${formData.pickupLocation}`,
+        guide_pickup_location: `Guide: ${formData.guideName} | Time: ${formData.startTime} | Pickup: ${formData.pickupLocation} | Drop-off: ${formData.dropoffLocation}`,
         damage_agreement: true,
         total_price: totalPrice,
         payment_status: 'paid',
@@ -298,24 +299,43 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
         </div>
       </div>
 
-      {/* Pickup Location */}
-      <div className="space-y-1.5">
-        <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider flex items-center gap-1">
-          <MapPin className="w-3.5 h-3.5 text-[#00B5AD]" />
-          Pick-Up &amp; Drop-Off Address
-        </label>
-        <input
-          type="text"
-          name="pickupLocation"
-          required
-          value={formData.pickupLocation}
-          onChange={handleChange}
-          placeholder="Enter your hotel, resort or address (e.g. Sapphire Beach Resort, Marriott, Red Hook)"
-          className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] placeholder-[#3B4E5A] outline-none"
-        />
-        <span className="block text-[13px] text-[#00B5AD] font-extrabold tracking-wide mt-1">
-          *Roundtrip private transit from Red Hook to St. Thomas hot shorelines is completely free and included!
+      {/* Pickup & Dropoff Location */}
+      <div className="space-y-3">
+        <span className="block text-[13px] text-[#00B5AD] font-extrabold tracking-wide">
+          Please choose your pick up and drop off address:
         </span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider flex items-center gap-1">
+              <MapPin className="w-3.5 h-3.5 text-[#00B5AD]" />
+              Pick Up Address
+            </label>
+            <input
+              type="text"
+              name="pickupLocation"
+              required
+              value={formData.pickupLocation}
+              onChange={handleChange}
+              placeholder="Where to pick you up?"
+              className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] placeholder-[#3B4E5A] outline-none"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider flex items-center gap-1">
+              <MapPin className="w-3.5 h-3.5 text-[#00B5AD]" />
+              Drop Off Address
+            </label>
+            <input
+              type="text"
+              name="dropoffLocation"
+              required
+              value={formData.dropoffLocation}
+              onChange={handleChange}
+              placeholder="Where to drop you off?"
+              className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] placeholder-[#3B4E5A] outline-none"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Referral Input Box */}
