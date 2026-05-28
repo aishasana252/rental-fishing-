@@ -12,6 +12,14 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
   // STEP 1 STATE: Gear Selection
   const [duration, setDuration] = useState('3'); // '1', '2', '3' days
 
+  const guideInclusions = [
+    'Personal transportation to St. Thomas hot shorelines',
+    'Premium shore rod & loaded tacklebox gear included',
+    'Ethical guidance & casting/rigging instruction',
+    'Keep your catches to cook at partnered restaurants!',
+    'Mouthwatering cold bottled island waters provided'
+  ];
+
   // Date helper for guide
   const getThreeDaysOutDate = () => {
     const today = new Date();
@@ -1024,26 +1032,60 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
             </p>
           </div>
 
-          <div className="bg-[#04282F]/30 border border-[#00B5AD]/15 p-6 rounded-2xl shadow-xl max-w-3xl mx-auto space-y-8">
-            <div className="flex items-center gap-4 border-b border-[#00B5AD]/15 pb-6">
-              <button
-                type="button"
-                onClick={() => setGuideBooked(!guideBooked)}
-                className="text-[#00B5AD] hover:scale-105 transition-transform cursor-pointer"
-              >
-                {guideBooked ? (
-                  <CheckSquare className="w-6 h-6 fill-[#00B5AD] text-[#001418]" />
-                ) : (
-                  <Square className="w-6 h-6 text-[#00B5AD]/60" />
-                )}
-              </button>
-              <div className="space-y-1 select-none text-left" onClick={() => setGuideBooked(!guideBooked)}>
-                <h5 className="text-sm font-black uppercase text-[#FFFFFF] cursor-pointer hover:text-[#00B5AD] transition-colors">Yes, include a Guided Shoreline Charter ($65/hr)</h5>
-                <p className="text-xs font-semibold text-[#A0ACB3]">Select this to add expert guidance and private transit to your gear rental!</p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            {/* Left Side: Pricing & Inclusions */}
+            <div className="space-y-6">
+              {/* Pricing Card */}
+              <div className="p-6 rounded-2xl border border-[#00B5AD]/20 bg-[#04282F]/30 shadow-xl space-y-3 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-[#00B5AD]/5 rounded-full pointer-events-none blur-xl" />
+                <span className="block text-[10px] font-bold text-[#6B7A82] uppercase tracking-wider">All-Inclusive Rate</span>
+                <div className="flex items-baseline gap-1 text-[#00B5AD]">
+                  <span className="text-5xl font-black font-['Outfit']">$65</span>
+                  <span className="text-lg font-bold text-[#6B7A82]">/ Hour</span>
+                </div>
+                <p className="text-xs text-[#A0ACB3] font-semibold leading-relaxed">
+                  *Full gear, tackle, licenses, and St. Thomas private shoreline transit (with complimentary pickup & drop-off from Red Hook) are 100% covered in the price.
+                </p>
+              </div>
+
+              {/* Inclusions Checkbox List */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold uppercase tracking-wider font-['Outfit',sans-serif] border-b border-[#00B5AD]/15 pb-2">
+                  Excursion Inclusions
+                </h3>
+                <ul className="space-y-3 text-sm font-semibold text-[#A0ACB3]">
+                  {guideInclusions.map((inc, idx) => (
+                    <li key={idx} className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-[#00B5AD] flex-shrink-0 mt-0.5" />
+                      <span>{inc}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
 
-            {guideBooked && (
+            {/* Right Side: Form / Toggle */}
+            <div className="bg-[#04282F]/30 border border-[#00B5AD]/15 p-6 rounded-2xl shadow-xl space-y-8 flex flex-col justify-between">
+              <div className="space-y-6">
+                <div className="flex items-center gap-4 border-b border-[#00B5AD]/15 pb-6">
+                  <button
+                    type="button"
+                    onClick={() => setGuideBooked(!guideBooked)}
+                    className="text-[#00B5AD] hover:scale-105 transition-transform cursor-pointer"
+                  >
+                    {guideBooked ? (
+                      <CheckSquare className="w-6 h-6 fill-[#00B5AD] text-[#001418]" />
+                    ) : (
+                      <Square className="w-6 h-6 text-[#00B5AD]/60" />
+                    )}
+                  </button>
+                  <div className="space-y-1 select-none text-left" onClick={() => setGuideBooked(!guideBooked)}>
+                    <h5 className="text-sm font-black uppercase text-[#FFFFFF] cursor-pointer hover:text-[#00B5AD] transition-colors">Yes, include a Guided Shoreline Charter ($65/hr)</h5>
+                    <p className="text-xs font-semibold text-[#A0ACB3]">Select this to add expert guidance and private transit to your gear rental!</p>
+                  </div>
+                </div>
+
+                {guideBooked && (
               <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
                 {/* Date & Hours Row */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1141,22 +1183,24 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
               </div>
             )}
             
-            {/* Controls */}
-            <div className="border-t border-[#00B5AD]/10 pt-6 flex justify-between items-center gap-4">
-              <button
-                type="button"
-                onClick={prevStep}
-                className="flex items-center gap-1 border border-[#6B7A82]/30 text-[#A0ACB3] hover:text-[#FFFFFF] px-5 py-3 rounded-lg text-xs font-extrabold uppercase tracking-wider cursor-pointer"
-              >
-                <ChevronLeft className="w-4 h-4" /> Back
-              </button>
-              <button
-                type="button"
-                onClick={nextStep}
-                className="flex items-center gap-1 bg-[#00B5AD] hover:bg-[#00A39E] text-[#FFFFFF] px-6 py-3 rounded-lg text-xs font-extrabold uppercase tracking-wider cursor-pointer shadow-md shadow-[#00B5AD]/15"
-              >
-                Proceed to Checkout <ChevronRight className="w-4 h-4" />
-              </button>
+                {/* Controls */}
+                <div className="border-t border-[#00B5AD]/10 pt-6 flex justify-between items-center gap-4 mt-auto">
+                  <button
+                    type="button"
+                    onClick={prevStep}
+                    className="flex items-center gap-1 border border-[#6B7A82]/30 text-[#A0ACB3] hover:text-[#FFFFFF] px-5 py-3 rounded-lg text-xs font-extrabold uppercase tracking-wider cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" /> Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={nextStep}
+                    className="flex items-center gap-1 bg-[#00B5AD] hover:bg-[#00A39E] text-[#FFFFFF] px-6 py-3 rounded-lg text-xs font-extrabold uppercase tracking-wider cursor-pointer shadow-md shadow-[#00B5AD]/15"
+                  >
+                    Proceed to Checkout <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
