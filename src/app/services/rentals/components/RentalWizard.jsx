@@ -194,7 +194,7 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
   // Total Excursion Booking Price
   const baseTotalPrice = totalGearPrice + luresPrice + securityDeposit + guidePrice;
   const hasReferral = !!referredBy.trim();
-  const totalPrice = hasReferral ? Math.max(0, baseTotalPrice - 10) : baseTotalPrice;
+  const totalPrice = baseTotalPrice;
 
   // --- QUANTITY HANDLERS ---
   const handleLureQty = (id, change) => {
@@ -295,7 +295,7 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
         paypal_order_id: orderId,
         payment_method: 'paypal',
         referred_by: referredBy.trim() || null,
-        referral_discount: hasReferral ? 10.00 : 0.00,
+        referral_discount: 0.00,
         pickup_address: null
       };
 
@@ -1164,7 +1164,7 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider">
-                      Charter Date (Min 3-Days Advance)
+                      Charter Date
                     </label>
                     <input
                       type="date"
@@ -1172,7 +1172,6 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
                       required
                       value={guideDate}
                       onChange={(e) => setGuideDate(e.target.value)}
-                      min={getThreeDaysOutDate()}
                       className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] outline-none"
                     />
                   </div>
@@ -1320,12 +1319,6 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
                     placeholder="Who referred you? (e.g. Sapphire Beach Resort, John Doe)"
                     className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-2.5 text-xs text-[#FFFFFF] placeholder-[#3B4E5A] outline-none"
                   />
-                  {hasReferral && (
-                    <div className="text-xs font-extrabold text-[#00B5AD] flex items-center gap-1.5 animate-[fadeIn_0.3s_ease-out]">
-                      <ShieldCheck className="w-4 h-4 text-[#00B5AD] flex-shrink-0" />
-                      <span>🎉 Referral Applied: -$10.00 discount applied to your rental total!</span>
-                    </div>
-                  )}
                 </div>
 
                 <div className="space-y-4">
