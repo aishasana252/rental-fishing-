@@ -87,7 +87,7 @@ export default async function GuidePage() {
                 To provide the best possible experience, all guided charters are now booked alongside your gear rental. Click below to start your unified booking process.
               </p>
               <Link
-                href="/services/rentals"
+                href="/services/rentals?reset=true"
                 className="inline-block bg-[#00B5AD] hover:bg-[#00A39E] text-[#FFFFFF] font-extrabold text-sm uppercase tracking-wider px-8 py-4 rounded-xl shadow-lg shadow-[#00B5AD]/20 transition-all hover:scale-105"
               >
                 Start Gear & Charter Booking
