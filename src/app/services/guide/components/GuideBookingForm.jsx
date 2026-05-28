@@ -20,7 +20,7 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
   const [status, setStatus] = useState({ type: null, text: '' });
   const router = useRouter();
 
-  const [paymentMethod, setPaymentMethod] = useState('card'); // 'card' or 'paypal'
+  const [paymentMethod, setPaymentMethod] = useState('paypal'); // 'card' or 'paypal'
   const [paypalLoaded, setPaypalLoaded] = useState(false);
   const [paypalError, setPaypalError] = useState(null);
  
@@ -75,6 +75,20 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
 
     try {
       window.paypal.Buttons({
+        onClick: (data, actions) => {
+          setStatus({ type: null, text: '' });
+          if (!formData.date) {
+            setStatus({ type: 'error', text: 'Please select an excursion date.' });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return actions.reject();
+          }
+          if (!formData.pickupLocation.trim()) {
+            setStatus({ type: 'error', text: 'Please specify a pickup location.' });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return actions.reject();
+          }
+          return actions.resolve();
+        },
         createOrder: (data, actions) => {
           return actions.order.create({
             purchase_units: [{
@@ -160,67 +174,8 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setSubmitting(true);
-    setStatus({ type: null, text: '' });
-
-    // Client-side validations
-    if (!formData.date) {
-      setStatus({ type: 'error', text: 'Please select an excursion date.' });
-      setSubmitting(false);
-      return;
-    }
-    if (!formData.pickupLocation.trim()) {
-      setStatus({ type: 'error', text: 'Please specify a pickup location.' });
-      setSubmitting(false);
-      return;
-    }
-
-    try {
-      // Send mock booking post
-      const payload = {
-        rental_duration: null,
-        pole_quantity: null,
-        guide_booked: true,
-        guide_hours: parseInt(formData.hours),
-        guide_date: formData.date,
-        // Combined guide details in the location field for perfect backwards-compatibility
-        guide_pickup_location: `Guide: ${formData.guideName} | Time: ${formData.startTime} | Pickup: ${formData.pickupLocation}`,
-        damage_agreement: true, // Auto-agree for guides
-        total_price: totalPrice,
-        payment_status: 'paid', // Auto paid on checkout
-        status: 'confirmed',
-        payment_method: 'card',
-        referred_by: formData.referredBy.trim() || null,
-        referral_discount: hasReferral ? 10.00 : 0.00
-      };
-
-      const res = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to complete guided charter booking');
-      }
-
-      setStatus({
-        type: 'success',
-        text: 'Your Guided Charter has been reserved successfully! Booking code generated. Redirecting to your profile...'
-      });
-
-      setTimeout(() => {
-        router.push('/profile');
-        router.refresh();
-      }, 2500);
-
-    } catch (error) {
-      console.error('Booking submission error:', error);
-      setStatus({ type: 'error', text: error.message || 'Failed to process booking. Please try again.' });
-      setSubmitting(false);
-    }
   };
 
   return (
@@ -385,93 +340,11 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
         )}
       </div>
 
-      {/* Payment Method Selector */}
+      {/* Official PayPal Checkout Container */}
       <div className="border-t border-[#00B5AD]/10 pt-4 space-y-3">
         <span className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider">
-          Select Payment Method
+          Payment Method: PayPal Secure Checkout
         </span>
-        <div className="grid grid-cols-2 gap-4">
-          <button
-            type="button"
-            onClick={() => setPaymentMethod('card')}
-            className={`py-3 px-4 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all ${
-              paymentMethod === 'card'
-                ? 'border-[#00B5AD] bg-[#00B5AD]/15 text-white shadow-md shadow-[#00B5AD]/10'
-                : 'border-[#00B5AD]/10 bg-[#001418]/60 text-[#A0ACB3] hover:text-white'
-            }`}
-          >
-            <CreditCard className="w-4 h-4" /> Credit Card (Simulated)
-          </button>
-          <button
-            type="button"
-            onClick={() => setPaymentMethod('paypal')}
-            className={`py-3 px-4 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all ${
-              paymentMethod === 'paypal'
-                ? 'border-[#00B5AD] bg-[#00B5AD]/15 text-white shadow-md shadow-[#00B5AD]/10'
-                : 'border-[#00B5AD]/10 bg-[#001418]/60 text-[#A0ACB3] hover:text-white'
-            }`}
-          >
-            <span className="text-[#00B5AD] font-black italic">Pay</span><span className="text-[#00B5AD] opacity-80 font-black italic">Pal</span> (Sandbox)
-          </button>
-        </div>
-      </div>
-
-      {/* Secure simulated card credentials */}
-      {paymentMethod === 'card' && (
-        <div className="border-t border-[#00B5AD]/10 pt-4 space-y-4">
-          <span className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider flex items-center gap-1.5">
-            <CreditCard className="w-4 h-4 text-[#00B5AD]" />
-            Simulated Payment Checkout (Visa / Mastercard)
-          </span>
-
-          <div className="space-y-3.5 p-4 rounded-xl bg-[#001418]/60 border border-[#00B5AD]/10">
-            <div className="space-y-1.5">
-              <label className="block text-[10px] font-bold text-[#6B7A82] uppercase tracking-wider">Cardholder Name</label>
-              <input
-                type="text"
-                name="cardName"
-                required={paymentMethod === 'card'}
-                value={formData.cardName}
-                onChange={handleChange}
-                placeholder="John Doe"
-                className="w-full bg-[#001418] border border-[#00B5AD]/25 focus:border-[#00B5AD] rounded-lg px-3 py-2.5 text-xs text-[#FFFFFF]"
-              />
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-2 space-y-1.5">
-                <label className="block text-[10px] font-bold text-[#6B7A82] uppercase tracking-wider">Card Number</label>
-                <input
-                  type="text"
-                  name="cardNumber"
-                  required={paymentMethod === 'card'}
-                  maxLength="16"
-                  value={formData.cardNumber}
-                  onChange={handleChange}
-                  placeholder="4111 2222 3333 4444"
-                  className="w-full bg-[#001418] border border-[#00B5AD]/25 focus:border-[#00B5AD] rounded-lg px-3 py-2.5 text-xs text-[#FFFFFF]"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-[#6B7A82] uppercase tracking-wider">CVC</label>
-                <input
-                  type="text"
-                  name="cardCvc"
-                  required={paymentMethod === 'card'}
-                  maxLength="3"
-                  value={formData.cardCvc}
-                  onChange={handleChange}
-                  placeholder="321"
-                  className="w-full bg-[#001418] border border-[#00B5AD]/25 focus:border-[#00B5AD] rounded-lg px-3 py-2.5 text-xs text-[#FFFFFF]"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Official PayPal Checkout Container */}
-      {paymentMethod === 'paypal' && (
         <div className="space-y-4 p-5 rounded-xl border border-[#00B5AD]/15 bg-[#001418]/60 text-center relative min-h-[120px] flex flex-col justify-center">
           {paypalError ? (
             <span className="text-red-500 font-bold text-xs">{paypalError}</span>
@@ -489,7 +362,7 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
             </div>
           )}
         </div>
-      )}
+      </div>
 
       {/* Pricing Summary & Checkout CTA */}
       <div className="border-t border-[#00B5AD]/10 pt-4 flex items-center justify-between gap-4">
@@ -498,20 +371,9 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
           <span className="text-[#00B5AD] text-2xl font-black font-['Outfit']">${totalPrice}.00</span>
         </div>
 
-        {paymentMethod === 'card' ? (
-          <button
-            type="submit"
-            disabled={submitting}
-            className="flex items-center gap-1.5 bg-[#00B5AD] hover:bg-[#00A39E] disabled:bg-[#00B5AD]/50 text-[#FFFFFF] text-xs font-bold uppercase tracking-wider px-6 py-3.5 rounded-lg shadow-lg shadow-[#00B5AD]/15 transition-all hover:scale-105 cursor-pointer"
-          >
-            {submitting ? 'Confirming...' : 'Authorize & Reserve'}
-            {!submitting && <ArrowRight className="w-4 h-4" />}
-          </button>
-        ) : (
-          <div className="text-[11px] text-[#A0ACB3] font-extrabold text-right">
-            Click <span className="text-[#00B5AD]">PayPal</span> button above to complete booking.
-          </div>
-        )}
+        <div className="text-[11px] text-[#A0ACB3] font-extrabold text-right">
+          Click <span className="text-[#00B5AD]">PayPal</span> button above to complete booking.
+        </div>
       </div>
     </form>
   );

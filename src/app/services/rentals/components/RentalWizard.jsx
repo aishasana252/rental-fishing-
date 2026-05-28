@@ -63,7 +63,7 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
   const [submitting, setSubmitting] = useState(false);
   const [statusMsg, setStatusMsg] = useState({ type: null, text: '' });
 
-  const [paymentMethod, setPaymentMethod] = useState('card'); // 'card' or 'paypal'
+  const [paymentMethod, setPaymentMethod] = useState('paypal'); // 'card' or 'paypal'
   const [paypalLoaded, setPaypalLoaded] = useState(false);
   const [paypalError, setPaypalError] = useState(null);
   const [referredBy, setReferredBy] = useState('');
@@ -225,68 +225,14 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
     }
   };
 
-  const handleCheckout = async (e) => {
+  const handleCheckout = (e) => {
     e.preventDefault();
-    setSubmitting(true);
-    setStatusMsg({ type: null, text: '' });
+  };
 
-    if (!session) {
-      setStatusMsg({ type: 'error', text: 'You must have a logged-in account to complete transactions.' });
-      setSubmitting(false);
-      return;
-    }
-
-    if (!rentalDate) {
-      setStatusMsg({ type: 'error', text: 'Please select an adult gear rental start date.' });
-      setSubmitting(false);
-      return;
-    }
-
-    if (childPoles > 0 && !childRentalDate) {
-      setStatusMsg({ type: 'error', text: "Please select a rental start date for the children's fishing poles." });
-      setSubmitting(false);
-      return;
-    }
-
-    try {
-      const selectedLures = lures
-        .filter((l) => l.quantity > 0)
-        .map((l) => ({
-          id: l.id,
-          name: l.name,
-          price: l.price,
-          quantity: l.quantity
-        }));
-
-      const payload = {
-        rental_duration: durationDays,
-        pole_quantity: poles,
-        guide_booked: false,
-        damage_agreement: damageAgreed,
-        total_price: totalPrice,
-        security_added: securityDeposit,
-        payment_status: 'paid', // Auto-authorized simulated credit card
-        status: 'confirmed',
-        rental_date: rentalDate,
-        child_pole_quantity: childPoles,
-        child_pole_date: childRentalDate || null,
-        selectedLures,
-        payment_method: 'card',
-        referred_by: referredBy.trim() || null,
-        referral_discount: hasReferral ? 10.00 : 0.00
-      };
-
-      const res = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to complete gear rental booking.');
-      }
-
-      // Clear localStorage state upon successful checkout
+  // --- LOCALSTORAGE PERSISTENCE ---
+  // Load state on mount to prevent Next.js hydration mismatch
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search.includes('reset=true')) {
       localStorage.removeItem('rental_step');
       localStorage.removeItem('rental_duration');
       localStorage.removeItem('rental_poles');
@@ -296,27 +242,10 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
       localStorage.removeItem('rental_child_poles');
       localStorage.removeItem('rental_child_date');
       localStorage.removeItem('rental_referred_by');
-
-      setStatusMsg({
-        type: 'success',
-        text: 'Success! Your premium fishing gear rental has been confirmed. Redirecting to your dashboard...'
-      });
-
-      setTimeout(() => {
-        router.push('/profile');
-        router.refresh();
-      }, 2500);
-
-    } catch (error) {
-      console.error('Checkout error:', error);
-      setStatusMsg({ type: 'error', text: error.message || 'An unexpected error occurred.' });
-      setSubmitting(false);
+      setStep(1);
+      return;
     }
-  };
 
-  // --- LOCALSTORAGE PERSISTENCE ---
-  // Load state on mount to prevent Next.js hydration mismatch
-  React.useEffect(() => {
     const savedStep = localStorage.getItem('rental_step');
     if (savedStep) setStep(parseInt(savedStep, 10));
 
@@ -1033,8 +962,8 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
           {/* Form Checkout - 7 Columns */}
           <div className="lg:col-span-7 space-y-6">
             <h3 className="text-xl font-bold uppercase tracking-wider font-['Outfit',sans-serif] border-b border-[#00B5AD]/10 pb-3 flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-[#00B5AD]" />
-              Secure Payment Details
+              <ShieldCheck className="w-5 h-5 text-[#00B5AD]" />
+              PayPal Secure Checkout
             </h3>
 
             {statusMsg.text && (
@@ -1072,135 +1001,44 @@ export default function RentalWizard({ session, initialLures, initialDamagePolic
                   )}
                 </div>
 
-                {/* Payment Method Selector */}
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <span className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider">
-                    Select Payment Method
+                    Payment Method: PayPal Secure Checkout
                   </span>
-                  <div className="grid grid-cols-2 gap-4">
+                  
+                  {/* Official PayPal Checkout Container */}
+                  <div className="space-y-4 p-5 rounded-xl border border-[#00B5AD]/15 bg-[#001418]/60 text-center relative min-h-[120px] flex flex-col justify-center animate-[fadeIn_0.3s_ease-out]">
+                    {paypalError ? (
+                      <span className="text-red-500 font-bold text-xs">{paypalError}</span>
+                    ) : !paypalLoaded ? (
+                      <div className="space-y-2 flex flex-col items-center">
+                        <div className="w-6 h-6 border-2 border-[#00B5AD] border-t-transparent rounded-full animate-spin" />
+                        <span className="text-xs text-[#A0ACB3] font-semibold">Loading secure PayPal portal...</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <span className="block text-xs text-[#A0ACB3] font-semibold mb-2">
+                          Authorize payment securely via official PayPal window below:
+                        </span>
+                        <div id="paypal-button-container" className="w-full max-w-sm mx-auto z-40 relative animate-[fadeIn_0.3s_ease-out]" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="pt-4 flex gap-4">
                     <button
                       type="button"
-                      onClick={() => setPaymentMethod('card')}
-                      className={`py-3 px-4 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all ${
-                        paymentMethod === 'card'
-                          ? 'border-[#00B5AD] bg-[#00B5AD]/15 text-white shadow-md shadow-[#00B5AD]/10'
-                          : 'border-[#00B5AD]/10 bg-[#001418]/60 text-[#A0ACB3] hover:text-white'
-                      }`}
+                      onClick={prevStep}
+                      disabled={submitting}
+                      className="flex items-center gap-1 border border-[#6B7A82]/30 text-[#A0ACB3] hover:text-[#FFFFFF] px-5 py-3 rounded-lg text-xs font-extrabold uppercase tracking-wider cursor-pointer"
                     >
-                      <CreditCard className="w-4 h-4" /> Credit Card (Simulated)
+                      Back
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod('paypal')}
-                      className={`py-3 px-4 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all ${
-                        paymentMethod === 'paypal'
-                          ? 'border-[#00B5AD] bg-[#00B5AD]/15 text-white shadow-md shadow-[#00B5AD]/10'
-                          : 'border-[#00B5AD]/10 bg-[#001418]/60 text-[#A0ACB3] hover:text-white'
-                      }`}
-                    >
-                      <span className="text-[#00B5AD] font-black italic">Pay</span><span className="text-[#00B5AD] opacity-80 font-black italic">Pal</span> (Sandbox)
-                    </button>
+                    <div className="flex-grow flex items-center justify-end text-[11px] text-[#A0ACB3] font-extrabold text-right">
+                      Click <span className="text-[#00B5AD]">PayPal</span> button above to complete booking.
+                    </div>
                   </div>
                 </div>
-
-                {paymentMethod === 'card' ? (
-                  <form onSubmit={handleCheckout} className="space-y-4">
-                    <div className="space-y-1.5 text-sm">
-                      <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider">Cardholder Name</label>
-                      <input
-                        type="text"
-                        name="cardName"
-                        required
-                        value={checkoutForm.cardName}
-                        onChange={handleCheckoutChange}
-                        className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] placeholder-[#3B4E5A] outline-none"
-                        placeholder="John Doe"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="col-span-2 space-y-1.5 text-sm">
-                        <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider">Card Number</label>
-                        <input
-                          type="text"
-                          name="cardNumber"
-                          required
-                          maxLength="16"
-                          value={checkoutForm.cardNumber}
-                          onChange={handleCheckoutChange}
-                          className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] placeholder-[#3B4E5A] outline-none"
-                          placeholder="4111 2222 3333 4444"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5 text-sm">
-                        <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider">CVC</label>
-                        <input
-                          type="text"
-                          name="cardCvc"
-                          required
-                          maxLength="3"
-                          value={checkoutForm.cardCvc}
-                          onChange={handleCheckoutChange}
-                          className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] placeholder-[#3B4E5A] outline-none"
-                          placeholder="321"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="pt-4 flex gap-4">
-                      <button
-                        type="button"
-                        onClick={prevStep}
-                        disabled={submitting}
-                        className="flex items-center gap-1 border border-[#6B7A82]/30 text-[#A0ACB3] hover:text-[#FFFFFF] px-5 py-3 rounded-lg text-xs font-extrabold uppercase tracking-wider cursor-pointer"
-                      >
-                        Back
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={submitting}
-                        className="flex-grow flex items-center justify-center gap-2 bg-[#00B5AD] hover:bg-[#00A39E] disabled:bg-[#00B5AD]/40 text-[#FFFFFF] font-extrabold py-3.5 rounded-lg uppercase tracking-wider shadow-lg shadow-[#00B5AD]/20 transition-all cursor-pointer"
-                      >
-                        {submitting ? 'Processing Transaction...' : 'Authorize & Pay Now'}
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <div className="space-y-4">
-                    {/* Official PayPal Checkout Container */}
-                    <div className="space-y-4 p-5 rounded-xl border border-[#00B5AD]/15 bg-[#001418]/60 text-center relative min-h-[120px] flex flex-col justify-center">
-                      {paypalError ? (
-                        <span className="text-red-500 font-bold text-xs">{paypalError}</span>
-                      ) : !paypalLoaded ? (
-                        <div className="space-y-2 flex flex-col items-center">
-                          <div className="w-6 h-6 border-2 border-[#00B5AD] border-t-transparent rounded-full animate-spin" />
-                          <span className="text-xs text-[#A0ACB3] font-semibold">Loading secure PayPal portal...</span>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <span className="block text-xs text-[#A0ACB3] font-semibold mb-2">
-                            Authorize payment securely via official PayPal window below:
-                          </span>
-                          <div id="paypal-button-container" className="w-full max-w-sm mx-auto z-40 relative animate-[fadeIn_0.3s_ease-out]" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="pt-4 flex gap-4">
-                      <button
-                        type="button"
-                        onClick={prevStep}
-                        disabled={submitting}
-                        className="flex items-center gap-1 border border-[#6B7A82]/30 text-[#A0ACB3] hover:text-[#FFFFFF] px-5 py-3 rounded-lg text-xs font-extrabold uppercase tracking-wider cursor-pointer"
-                      >
-                        Back
-                      </button>
-                      <div className="flex-grow flex items-center justify-end text-[11px] text-[#A0ACB3] font-extrabold text-right">
-                        Click <span className="text-[#00B5AD]">PayPal</span> button above to complete booking.
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             ) : (
               <div className="text-center p-8 border border-[#00B5AD]/10 rounded-2xl bg-[#001418]/40 space-y-4">

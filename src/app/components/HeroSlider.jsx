@@ -10,7 +10,7 @@ export default function HeroSlider({ cms }) {
     {
       image: '/assets/shore_1.png',
       cta: 'Rent Fishing Gear',
-      href: '/services/rentals',
+      href: '/services/rentals?reset=true',
       isGamingFont: true,
       defaultTitle: 'Shore Fishing Rentals in St. Thomas',
       defaultSubtitle: 'PREMIER ISLAND-STYLE FISHING',

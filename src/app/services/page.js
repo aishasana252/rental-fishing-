@@ -12,7 +12,7 @@ export default function ServicesPage() {
       priceText: 'From $25 / Day',
       icon: <ShoppingBag className="w-6 h-6 text-[#00B5AD]" />,
       image: '/assets/service_rentals.png',
-      href: '/services/rentals',
+      href: '/services/rentals?reset=true',
       features: ['Tacklebox Included', '6 Special Lure Add-ons', 'Comprehensive Damage Protection', 'Red Hook Pick-up/Return']
     },
     {
