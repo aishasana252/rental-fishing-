@@ -7,7 +7,6 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
   const [formData, setFormData] = useState({
     date: '',
     hours: '2',
-    guideName: 'First Available (Assign Best Expert)',
     startTime: '08:00 AM',
     pickupLocation: '',
     dropoffLocation: '',
@@ -96,7 +95,7 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
               amount: {
                 value: totalPrice.toFixed(2)
               },
-              description: `Guided Charter: ${formData.guideName} (${formData.hours} Hours)`
+              description: `Guided Charter: Assigned Best Expert (${formData.hours} Hours)`
             }]
           });
         },
@@ -138,7 +137,7 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
         guide_booked: true,
         guide_hours: parseInt(formData.hours),
         guide_date: formData.date,
-        guide_pickup_location: `Guide: ${formData.guideName} | Time: ${formData.startTime} | Pickup: ${formData.pickupLocation} | Drop-off: ${formData.dropoffLocation}`,
+        guide_pickup_location: `Guide: Assigned Best Expert | Time: ${formData.startTime} | Pickup: ${formData.pickupLocation} | Drop-off: ${formData.dropoffLocation}`,
         damage_agreement: true,
         total_price: totalPrice,
         payment_status: 'paid',
@@ -200,35 +199,8 @@ export default function GuideBookingForm({ session, initialGuides = [] }) {
         </div>
       )}
 
-      {/* Choose Guide & Excursion Start Time Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider flex items-center gap-1">
-            <User className="w-3.5 h-3.5 text-[#00B5AD]" />
-            Choose Your Guide
-          </label>
-          <select
-            name="guideName"
-            value={formData.guideName}
-            onChange={handleChange}
-            className="w-full bg-[#001418] border border-[#00B5AD]/20 focus:border-[#00B5AD] rounded-lg px-4 py-3 text-[#FFFFFF] outline-none"
-          >
-            <option value="First Available (Assign Best Expert)">First Available (Assign Best Expert)</option>
-            {initialGuides && initialGuides.length > 0 ? (
-              initialGuides.map((guide) => (
-                <option key={guide.id} value={`${guide.name} (${guide.experience || 'Pro Expert'})`}>
-                  {guide.name} ({guide.experience || 'Pro Expert'})
-                </option>
-              ))
-            ) : (
-              <>
-                <option value="Capt. Dan (Shore Cast Master - 15+ Yrs Exp)">Capt. Dan (Shore Cast Master)</option>
-                <option value="Sarah (Fly & Wading Pro - 8+ Yrs Exp)">Sarah (Fly & Wading Pro)</option>
-                <option value="Marcus (Tarpon Secret Spots - 10+ Yrs Exp)">Marcus (Tarpon Secret Spots)</option>
-              </>
-            )}
-          </select>
-        </div>
+      {/* Excursion Start Time Row */}
+      <div className="grid grid-cols-1 gap-4">
 
         <div className="space-y-1.5">
           <label className="block text-xs font-bold text-[#6B7A82] uppercase tracking-wider flex items-center gap-1">
