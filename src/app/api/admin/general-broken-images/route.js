@@ -2,6 +2,8 @@ import { getSession } from '@/lib/auth';
 import { query } from '@/lib/db';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req) {
   try {
     const res = await query("SELECT content_data FROM site_content WHERE section_key = 'general_broken_images' LIMIT 1;");

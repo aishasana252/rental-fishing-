@@ -1859,7 +1859,7 @@ export default function AdminDashboard({ session, initialData }) {
                             <img src={img} alt="Broken preview" className="w-full h-full object-cover" />
                             <button
                               type="button"
-                              onClick={() => handleDeleteGeneralBrokenImage(img)}
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteGeneralBrokenImage(img); }}
                               className="absolute inset-0 bg-red-900/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                             >
                               <Trash2 className="w-4 h-4 text-white" />
