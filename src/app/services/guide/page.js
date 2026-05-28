@@ -86,7 +86,7 @@ export default async function GuidePage() {
               <p className="text-sm text-[#A0ACB3] font-semibold leading-relaxed mb-6">
                 To provide the best possible experience, all guided charters are now booked alongside your gear rental. Click below to start your unified booking process.
               </p>
-              <div className="relative inline-block mt-4">
+              <div className="relative inline-block mt-12">
                 {/* Tooltip / Popup */}
                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[#FFB52E] text-[#001418] text-xs font-black uppercase tracking-wider px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap animate-bounce z-10">
                   Let's get your gear!
