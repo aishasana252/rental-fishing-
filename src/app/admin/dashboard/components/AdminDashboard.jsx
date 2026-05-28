@@ -769,7 +769,11 @@ export default function AdminDashboard({ session, initialData }) {
     if (!confirm('Are you sure you want to delete this broken image?')) return;
     setUploadingImage(true);
     try {
-      const res = await fetch(`/api/admin/general-broken-images?url=${encodeURIComponent(url)}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/general-broken-images`, { 
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
       if (!res.ok) throw new Error('Failed to delete image');
       setGeneralBrokenImages(prev => prev.filter(img => img !== url));
       setStatusMsg({ type: 'success', text: 'Broken image deleted.' });
@@ -1862,9 +1866,9 @@ export default function AdminDashboard({ session, initialData }) {
                             <button
                               type="button"
                               onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteGeneralBrokenImage(img); }}
-                              className="absolute inset-0 bg-red-900/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="absolute top-1 right-1 bg-red-600 rounded-md p-1 shadow-md hover:bg-red-700 transition-colors z-10"
                             >
-                              <Trash2 className="w-4 h-4 text-white" />
+                              <Trash2 className="w-3 h-3 text-white" />
                             </button>
                           </div>
                         ))}

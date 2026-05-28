@@ -62,8 +62,14 @@ export async function DELETE(req) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(req.url);
-    const imageUrl = searchParams.get('url');
+    let imageUrl;
+    try {
+      const body = await req.json();
+      imageUrl = body.url;
+    } catch {
+      const { searchParams } = new URL(req.url);
+      imageUrl = searchParams.get('url');
+    }
 
     if (!imageUrl) {
       return NextResponse.json({ error: 'Image URL is required' }, { status: 400 });
